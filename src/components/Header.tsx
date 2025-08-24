@@ -17,15 +17,16 @@ export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <header className="bg-background border-b border-border sticky top-0 z-50 shadow-sm">
+    <header className="bg-background border-b-4 border-ljump-green sticky top-0 z-50 shadow-sm">
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-        <div className="flex items-center">
+        <div className="flex items-center space-x-4">
           <img 
             src="/lovable-uploads/d9588156-7a67-47ea-873a-f25c119cd51f.png" 
             alt="L!JUMP Logo" 
             className="h-10 w-auto"
           />
+          <span className="text-lg font-medium text-foreground">設定/操作マニュアル</span>
         </div>
         
         <div className="flex items-center space-x-4">

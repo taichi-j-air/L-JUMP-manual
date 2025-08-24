@@ -28,15 +28,15 @@ export const SearchBox = () => {
   };
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto px-4 py-6">
+    <div className="relative w-full max-w-3xl mx-auto px-4 py-8">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-ljump-green" />
         <Input
           type="text"
           placeholder="記事を検索..."
           value={searchQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-10 pr-4 py-3 w-full text-base bg-background border-border rounded-lg shadow-sm focus:ring-2 focus:ring-ljump-green focus:border-ljump-green"
+          className="pl-12 pr-6 py-4 w-full text-lg bg-background border-2 border-ljump-green rounded-2xl shadow-sm focus:ring-2 focus:ring-ljump-green focus:border-ljump-green md:border-2 md:border-ljump-green border border-border"
         />
       </div>
       
