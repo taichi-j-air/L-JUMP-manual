@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -63,6 +63,9 @@ export const Footer = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>管理者ログイン</DialogTitle>
+            <DialogDescription>
+              管理者用のパスワードを入力してください
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Input
