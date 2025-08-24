@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { FileUpload } from '@/components/ui/file-upload';
+import { BlockEditor, Block } from '@/components/admin/BlockEditor';
+import { EditArticleModal, EditNewsModal, EditCategoryModal } from '@/components/admin/EditModals';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Article, Category, News } from '@/hooks/useArticles';
@@ -34,6 +37,22 @@ const Admin = () => {
     content: '',
     published: false
   });
+
+  // Form states for new category
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    slug: '',
+    description: ''
+  });
+
+  // Edit states
+  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+  const [editingNews, setEditingNews] = useState<News | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  // Block editor state
+  const [editorBlocks, setEditorBlocks] = useState<Block[]>([]);
+  const [useBlockEditor, setUseBlockEditor] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -68,7 +87,7 @@ const Admin = () => {
   };
 
   const handleCreateArticle = async () => {
-    if (!newArticle.title || !newArticle.content) {
+    if (!newArticle.title || (!newArticle.content && editorBlocks.length === 0)) {
       toast({
         title: "エラー",
         description: "タイトルと内容は必須です",
@@ -78,9 +97,16 @@ const Admin = () => {
     }
 
     try {
+      let content = newArticle.content;
+      
+      // If using block editor, convert blocks to content
+      if (useBlockEditor && editorBlocks.length > 0) {
+        content = JSON.stringify(editorBlocks);
+      }
+
       const { error } = await supabase
         .from('articles')
-        .insert([newArticle]);
+        .insert([{ ...newArticle, content }]);
 
       if (error) throw error;
 
@@ -99,6 +125,7 @@ const Admin = () => {
         thumbnail_url: ''
       });
 
+      setEditorBlocks([]);
       fetchAllData();
     } catch (error) {
       console.error('Error creating article:', error);
@@ -144,6 +171,194 @@ const Admin = () => {
       toast({
         title: "エラー",
         description: "ニュースの作成に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategory.name || !newCategory.slug) {
+      toast({
+        title: "エラー",
+        description: "カテゴリ名とスラッグは必須です",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .insert([newCategory]);
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "カテゴリが作成されました"
+      });
+
+      setNewCategory({
+        name: '',
+        slug: '',
+        description: ''
+      });
+
+      fetchAllData();
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast({
+        title: "エラー",
+        description: "カテゴリの作成に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdateArticle = async () => {
+    if (!editingArticle) return;
+
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .update({
+          title: editingArticle.title,
+          excerpt: editingArticle.excerpt,
+          content: editingArticle.content,
+          category_id: editingArticle.category_id,
+          published: editingArticle.published,
+          featured: editingArticle.featured,
+          thumbnail_url: editingArticle.thumbnail_url
+        })
+        .eq('id', editingArticle.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "記事が更新されました"
+      });
+
+      setEditingArticle(null);
+      fetchAllData();
+    } catch (error) {
+      console.error('Error updating article:', error);
+      toast({
+        title: "エラー",
+        description: "記事の更新に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return;
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: editingCategory.name,
+          slug: editingCategory.slug,
+          description: editingCategory.description
+        })
+        .eq('id', editingCategory.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "カテゴリが更新されました"
+      });
+
+      setEditingCategory(null);
+      fetchAllData();
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "エラー",
+        description: "カテゴリの更新に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteArticle = async (id: string) => {
+    if (!confirm('本当にこの記事を削除しますか？')) return;
+
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "記事が削除されました"
+      });
+
+      fetchAllData();
+    } catch (error) {
+      console.error('Error deleting article:', error);
+      toast({
+        title: "エラー",
+        description: "記事の削除に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteNews = async (id: string) => {
+    if (!confirm('本当にこのニュースを削除しますか？')) return;
+
+    try {
+      const { error } = await supabase
+        .from('news')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "ニュースが削除されました"
+      });
+
+      fetchAllData();
+    } catch (error) {
+      console.error('Error deleting news:', error);
+      toast({
+        title: "エラー",
+        description: "ニュースの削除に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!confirm('本当にこのカテゴリを削除しますか？')) return;
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "カテゴリが削除されました"
+      });
+
+      fetchAllData();
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "エラー",
+        description: "カテゴリの削除に失敗しました",
         variant: "destructive"
       });
     }
@@ -199,209 +414,424 @@ const Admin = () => {
     }
   };
 
+  const handleImageUpload = (files: FileList) => {
+    const file = files[0];
+    if (file) {
+      // TODO: Implement actual Supabase Storage upload
+      const fakeUrl = URL.createObjectURL(file);
+      setNewArticle({ ...newArticle, thumbnail_url: fakeUrl });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold text-foreground">L!JUMP 管理者ページ</h1>
-          <Button onClick={() => window.location.href = '/'} variant="outline">
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-card border-r border-border p-4 space-y-4">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-foreground mb-2">L!JUMP Admin</h2>
+          <div className="w-full h-px bg-border"></div>
+        </div>
+        
+        <nav className="space-y-2">
+          <div className="space-y-1">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">コンテンツ管理</h3>
+            <a href="#articles" className="block px-3 py-2 text-sm rounded hover:bg-muted transition-colors">記事管理</a>
+            <a href="#news" className="block px-3 py-2 text-sm rounded hover:bg-muted transition-colors">ニュース管理</a>
+            <a href="#categories" className="block px-3 py-2 text-sm rounded hover:bg-muted transition-colors">カテゴリ管理</a>
+          </div>
+          
+          <div className="space-y-1">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">サイト設定</h3>
+            <a href="#privacy" className="block px-3 py-2 text-sm rounded hover:bg-muted transition-colors">プライバシーポリシー</a>
+            <a href="#terms" className="block px-3 py-2 text-sm rounded hover:bg-muted transition-colors">利用規約</a>
+          </div>
+        </nav>
+        
+        <div className="mt-auto pt-4">
+          <Button onClick={() => window.location.href = '/'} variant="outline" className="w-full">
             サイトに戻る
           </Button>
         </div>
+      </div>
 
-        <Tabs defaultValue="articles" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="articles">記事管理</TabsTrigger>
-            <TabsTrigger value="news">ニュース管理</TabsTrigger>
-            <TabsTrigger value="categories">カテゴリ管理</TabsTrigger>
-          </TabsList>
+      {/* Main Content */}
+      <div className="flex-1 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-3xl font-bold text-foreground">管理者ページ</h1>
+          </div>
 
-          <TabsContent value="articles" className="space-y-6">
-            {/* Create New Article */}
-            <Card>
-              <CardHeader>
-                <CardTitle>新しい記事を作成</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input
-                  placeholder="記事タイトル"
-                  value={newArticle.title}
-                  onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
-                />
-                <Input
-                  placeholder="記事の概要"
-                  value={newArticle.excerpt}
-                  onChange={(e) => setNewArticle({ ...newArticle, excerpt: e.target.value })}
-                />
-                <Textarea
-                  placeholder="記事内容"
-                  value={newArticle.content}
-                  onChange={(e) => setNewArticle({ ...newArticle, content: e.target.value })}
-                  rows={10}
-                />
-                <Select value={newArticle.category_id} onValueChange={(value) => setNewArticle({ ...newArticle, category_id: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="カテゴリを選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="サムネイル画像URL（オプション）"
-                  value={newArticle.thumbnail_url}
-                  onChange={(e) => setNewArticle({ ...newArticle, thumbnail_url: e.target.value })}
-                />
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="published"
-                      checked={newArticle.published}
-                      onCheckedChange={(checked) => setNewArticle({ ...newArticle, published: checked })}
-                    />
-                    <Label htmlFor="published">公開</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="featured"
-                      checked={newArticle.featured}
-                      onCheckedChange={(checked) => setNewArticle({ ...newArticle, featured: checked })}
-                    />
-                    <Label htmlFor="featured">注目記事</Label>
-                  </div>
-                </div>
-                <Button onClick={handleCreateArticle} className="bg-ljump-green hover:bg-ljump-green-dark">
-                  記事を作成
-                </Button>
-              </CardContent>
-            </Card>
+          <Tabs defaultValue="articles" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="articles">記事管理</TabsTrigger>
+              <TabsTrigger value="news">ニュース管理</TabsTrigger>
+              <TabsTrigger value="categories">カテゴリ管理</TabsTrigger>
+              <TabsTrigger value="privacy">プライバシーポリシー</TabsTrigger>
+              <TabsTrigger value="terms">利用規約</TabsTrigger>
+            </TabsList>
 
-            {/* Articles List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>記事一覧</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {articles.map((article) => (
-                    <div key={article.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">{article.title}</h3>
-                        <p className="text-sm text-muted-foreground">{article.excerpt}</p>
-                        <p className="text-xs text-muted-foreground">
-                          作成日: {new Date(article.created_at).toLocaleDateString('ja-JP')}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded text-xs ${article.published ? 'bg-ljump-green/20 text-ljump-green' : 'bg-muted text-muted-foreground'}`}>
-                          {article.published ? '公開中' : '非公開'}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleArticlePublished(article.id, article.published)}
-                        >
-                          {article.published ? '非公開にする' : '公開する'}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="news" className="space-y-6">
-            {/* Create New News */}
-            <Card>
-              <CardHeader>
-                <CardTitle>新しいニュースを作成</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Input
-                  placeholder="ニュースタイトル"
-                  value={newNews.title}
-                  onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
-                />
-                <Textarea
-                  placeholder="ニュース内容（オプション）"
-                  value={newNews.content}
-                  onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
-                  rows={5}
-                />
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="news-published"
-                    checked={newNews.published}
-                    onCheckedChange={(checked) => setNewNews({ ...newNews, published: checked })}
+            <TabsContent value="articles" className="space-y-6">
+              {/* Create New Article */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>新しい記事を作成</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="記事タイトル"
+                    value={newArticle.title}
+                    onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
                   />
-                  <Label htmlFor="news-published">公開</Label>
-                </div>
-                <Button onClick={handleCreateNews} className="bg-ljump-green hover:bg-ljump-green-dark">
-                  ニュースを作成
-                </Button>
-              </CardContent>
-            </Card>
+                  <Input
+                    placeholder="記事の概要"
+                    value={newArticle.excerpt}
+                    onChange={(e) => setNewArticle({ ...newArticle, excerpt: e.target.value })}
+                  />
+                  
+                  <Select value={newArticle.category_id} onValueChange={(value) => setNewArticle({ ...newArticle, category_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="カテゴリを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Input
+                    placeholder="サムネイル画像URL（オプション）"
+                    value={newArticle.thumbnail_url}
+                    onChange={(e) => setNewArticle({ ...newArticle, thumbnail_url: e.target.value })}
+                  />
+                  
+                  {/* Image Upload */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">または画像をアップロード</Label>
+                    <FileUpload
+                      onFileSelect={handleImageUpload}
+                      accept="image/*"
+                    />
+                  </div>
 
-            {/* News List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>ニュース一覧</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {news.map((newsItem) => (
-                    <div key={newsItem.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-foreground">{newsItem.title}</h3>
-                        <p className="text-sm text-muted-foreground">{newsItem.content}</p>
-                        <p className="text-xs text-muted-foreground">
-                          作成日: {new Date(newsItem.created_at).toLocaleDateString('ja-JP')}
-                        </p>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded text-xs ${newsItem.published ? 'bg-ljump-green/20 text-ljump-green' : 'bg-muted text-muted-foreground'}`}>
-                          {newsItem.published ? '公開中' : '非公開'}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleNewsPublished(newsItem.id, newsItem.published)}
-                        >
-                          {newsItem.published ? '非公開にする' : '公開する'}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  {/* Editor Mode Toggle */}
+                  <div className="flex items-center space-x-2 p-4 bg-muted/50 rounded-lg">
+                    <Switch
+                      id="block-editor"
+                      checked={useBlockEditor}
+                      onCheckedChange={setUseBlockEditor}
+                    />
+                    <Label htmlFor="block-editor" className="cursor-pointer">
+                      ブロックエディタを使用（高度な編集機能）
+                    </Label>
+                  </div>
 
-          <TabsContent value="categories" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>カテゴリ一覧</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {categories.map((category) => (
-                    <div key={category.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <div>
-                        <h3 className="font-semibold text-foreground">{category.name}</h3>
-                        <p className="text-sm text-muted-foreground">{category.description}</p>
-                      </div>
+                  {/* Content Editor */}
+                  {useBlockEditor ? (
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">記事内容（ブロックエディタ）</Label>
+                      <BlockEditor
+                        blocks={editorBlocks}
+                        onChange={setEditorBlocks}
+                      />
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  ) : (
+                    <Textarea
+                      placeholder="記事内容"
+                      value={newArticle.content}
+                      onChange={(e) => setNewArticle({ ...newArticle, content: e.target.value })}
+                      rows={15}
+                    />
+                  )}
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="published"
+                        checked={newArticle.published}
+                        onCheckedChange={(checked) => setNewArticle({ ...newArticle, published: checked })}
+                      />
+                      <Label htmlFor="published">公開</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="featured"
+                        checked={newArticle.featured}
+                        onCheckedChange={(checked) => setNewArticle({ ...newArticle, featured: checked })}
+                      />
+                      <Label htmlFor="featured">注目記事</Label>
+                    </div>
+                  </div>
+                  <Button onClick={handleCreateArticle} className="bg-ljump-green hover:bg-ljump-green-dark">
+                    記事を作成
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Articles List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>記事一覧</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {articles.map((article) => (
+                      <div key={article.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-foreground">{article.title}</h3>
+                          <p className="text-sm text-muted-foreground">{article.excerpt}</p>
+                          <p className="text-xs text-muted-foreground">
+                            作成日: {new Date(article.created_at).toLocaleDateString('ja-JP')}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded text-xs ${article.published ? 'bg-ljump-green/20 text-ljump-green' : 'bg-muted text-muted-foreground'}`}>
+                            {article.published ? '公開中' : '非公開'}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingArticle(article)}
+                          >
+                            編集
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleArticlePublished(article.id, article.published)}
+                          >
+                            {article.published ? '非公開にする' : '公開する'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteArticle(article.id)}
+                          >
+                            削除
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="news" className="space-y-6">
+              {/* Create New News */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>新しいニュースを作成</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="ニュースタイトル"
+                    value={newNews.title}
+                    onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
+                  />
+                  <Textarea
+                    placeholder="ニュース内容（オプション）"
+                    value={newNews.content}
+                    onChange={(e) => setNewNews({ ...newNews, content: e.target.value })}
+                    rows={5}
+                  />
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="news-published"
+                      checked={newNews.published}
+                      onCheckedChange={(checked) => setNewNews({ ...newNews, published: checked })}
+                    />
+                    <Label htmlFor="news-published">公開</Label>
+                  </div>
+                  <Button onClick={handleCreateNews} className="bg-ljump-green hover:bg-ljump-green-dark">
+                    ニュースを作成
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* News List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>ニュース一覧</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {news.map((newsItem) => (
+                      <div key={newsItem.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-foreground">{newsItem.title}</h3>
+                          <p className="text-sm text-muted-foreground">{newsItem.content}</p>
+                          <p className="text-xs text-muted-foreground">
+                            作成日: {new Date(newsItem.created_at).toLocaleDateString('ja-JP')}
+                          </p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded text-xs ${newsItem.published ? 'bg-ljump-green/20 text-ljump-green' : 'bg-muted text-muted-foreground'}`}>
+                            {newsItem.published ? '公開中' : '非公開'}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingNews(newsItem)}
+                          >
+                            編集
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => toggleNewsPublished(newsItem.id, newsItem.published)}
+                          >
+                            {newsItem.published ? '非公開にする' : '公開する'}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteNews(newsItem.id)}
+                          >
+                            削除
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="categories" className="space-y-6">
+              {/* Create New Category */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>新しいカテゴリを作成</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Input
+                    placeholder="カテゴリ名"
+                    value={newCategory.name}
+                    onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
+                  />
+                  <Input
+                    placeholder="スラッグ（URL用）"
+                    value={newCategory.slug}
+                    onChange={(e) => setNewCategory({ ...newCategory, slug: e.target.value })}
+                  />
+                  <Input
+                    placeholder="説明（オプション）"
+                    value={newCategory.description}
+                    onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
+                  />
+                  <Button onClick={handleCreateCategory} className="bg-ljump-green hover:bg-ljump-green-dark">
+                    カテゴリを作成
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Categories List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>カテゴリ一覧</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {categories.map((category) => (
+                      <div key={category.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                        <div>
+                          <h3 className="font-semibold text-foreground">{category.name}</h3>
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
+                          <p className="text-xs text-muted-foreground">スラッグ: {category.slug}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingCategory(category)}
+                          >
+                            編集
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteCategory(category.id)}
+                          >
+                            削除
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="privacy" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>プライバシーポリシー編集</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">プライバシーポリシーの内容を編集できます</p>
+                  <Textarea
+                    placeholder="プライバシーポリシーの内容を入力..."
+                    rows={15}
+                  />
+                  <Button className="mt-4 bg-ljump-green hover:bg-ljump-green-dark">
+                    保存
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="terms" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>利用規約編集</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">利用規約の内容を編集できます</p>
+                  <Textarea
+                    placeholder="利用規約の内容を入力..."
+                    rows={15}
+                  />
+                  <Button className="mt-4 bg-ljump-green hover:bg-ljump-green-dark">
+                    保存
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+          
+          {/* Edit Modals */}
+          <EditArticleModal
+            article={editingArticle}
+            categories={categories}
+            isOpen={!!editingArticle}
+            onClose={() => setEditingArticle(null)}
+            onSave={handleUpdateArticle}
+            onChange={setEditingArticle}
+          />
+          
+          <EditNewsModal
+            news={editingNews}
+            isOpen={!!editingNews}
+            onClose={() => setEditingNews(null)}
+            onSave={() => {
+              // Handle news update
+              setEditingNews(null);
+              fetchAllData();
+            }}
+            onChange={setEditingNews}
+          />
+          
+          <EditCategoryModal
+            category={editingCategory}
+            isOpen={!!editingCategory}
+            onClose={() => setEditingCategory(null)}
+            onSave={handleUpdateCategory}
+            onChange={setEditingCategory}
+          />
+        </div>
       </div>
     </div>
   );
