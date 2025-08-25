@@ -22,7 +22,7 @@ export const Header = () => {
       <div className="hidden md:flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
         <div className="flex items-center space-x-4">
           <img 
-            src="/lovable-uploads/d9588156-7a67-47ea-873a-f25c119cd51f.png" 
+            src="/lovable-uploads/b35433d3-00d4-4ea7-9996-76c1f655f289.png" 
             alt="L!JUMP Logo" 
             className="h-10 w-auto"
           />
@@ -57,7 +57,7 @@ export const Header = () => {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex flex-col">
             <img 
-              src="/lovable-uploads/d9588156-7a67-47ea-873a-f25c119cd51f.png" 
+              src="/lovable-uploads/b35433d3-00d4-4ea7-9996-76c1f655f289.png" 
               alt="L!JUMP Logo" 
               className="h-8 w-auto mb-1"
             />

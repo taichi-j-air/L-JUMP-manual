@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, User } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface ArticleCardProps {
   id: number;
@@ -22,8 +23,9 @@ export const ArticleCard = ({
   thumbnail 
 }: ArticleCardProps) => {
   return (
-    <Card className="bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group h-full">
-      <CardHeader className="p-0">
+    <Link to={`/article/${id}`}>
+      <Card className="bg-card border border-border shadow-card hover:shadow-elegant transition-all duration-300 cursor-pointer group h-full">
+        <CardHeader className="p-0">
         {thumbnail ? (
           <img 
             src={thumbnail} 
@@ -66,5 +68,6 @@ export const ArticleCard = ({
         </p>
       </CardContent>
     </Card>
+    </Link>
   );
 };

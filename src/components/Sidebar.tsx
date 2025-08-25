@@ -1,17 +1,65 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-
-const categories = [
-  { id: "all", name: "全体", count: 48 },
-  { id: "basic", name: "基本設定", count: 12 },
-  { id: "account", name: "アカウント管理", count: 8 },
-  { id: "integration", name: "データ連携", count: 15 },
-  { id: "reports", name: "レポート機能", count: 7 },
-  { id: "troubleshooting", name: "トラブルシューティング", count: 6 }
-];
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
+import { Article, Category } from "@/hooks/useArticles";
 
 export const Sidebar = () => {
+  const [categories, setCategories] = useState<(Category & { count: number })[]>([]);
+  const [popularArticles, setPopularArticles] = useState<Article[]>([]);
+
+  useEffect(() => {
+    fetchSidebarData();
+  }, []);
+
+  const fetchSidebarData = async () => {
+    try {
+      // Fetch categories with article counts
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+
+      if (categoriesData) {
+        const categoriesWithCounts = await Promise.all(
+          categoriesData.map(async (category) => {
+            const { count } = await supabase
+              .from('articles')
+              .select('*', { count: 'exact', head: true })
+              .eq('category_id', category.id)
+              .eq('published', true);
+            
+            return { ...category, count: count || 0 };
+          })
+        );
+
+        // Add "All" category
+        const { count: totalCount } = await supabase
+          .from('articles')
+          .select('*', { count: 'exact', head: true })
+          .eq('published', true);
+
+        setCategories([
+          { id: 'all', name: '全体', slug: 'all', count: totalCount || 0 },
+          ...categoriesWithCounts
+        ]);
+      }
+
+      // Fetch popular articles (featured articles or latest ones)
+      const { data: articlesData } = await supabase
+        .from('articles')
+        .select('*')
+        .eq('published', true)
+        .order('featured', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      setPopularArticles(articlesData || []);
+    } catch (error) {
+      console.error('Error fetching sidebar data:', error);
+    }
+  };
   return (
     <div className="w-full lg:w-80 space-y-3 md:space-y-6">
       {/* Popular Articles - Mobile First */}
@@ -21,19 +69,15 @@ export const Sidebar = () => {
           人気の記事
         </h3>
         <div className="space-y-2 md:space-y-4">
-          {[
-            "初期設定の完全ガイド",
-            "データ連携の設定方法", 
-            "レポート作成のコツ"
-          ].map((title, index) => (
-            <div key={index} className="group cursor-pointer">
+          {popularArticles.slice(0, 5).map((article) => (
+            <Link key={article.id} to={`/article/${article.id}`} className="group cursor-pointer block">
               <h4 className="text-xs md:text-sm font-medium text-foreground group-hover:text-ljump-green transition-colors line-clamp-2 mb-1">
-                {title}
+                {article.title}
               </h4>
               <div className="flex items-center text-xs text-muted-foreground space-x-1 md:space-x-2">
-                <span className="text-xs">2024年1月{15-index}日</span>
+                <span className="text-xs">{new Date(article.created_at).toLocaleDateString('ja-JP')}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

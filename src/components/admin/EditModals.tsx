@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,15 +29,30 @@ export const EditArticleModal: React.FC<EditArticleModalProps> = ({
 }) => {
   if (!article) return null;
 
-  const handleImageUpload = (files: FileList) => {
-    // TODO: Implement actual file upload to Supabase Storage
-    // For now, just set a placeholder URL
+  const handleImageUpload = async (files: FileList) => {
     const file = files[0];
     if (file) {
-      // In a real implementation, you would upload to Supabase Storage here
-      // and get the public URL back
-      const fakeUrl = URL.createObjectURL(file);
-      onChange({ ...article, thumbnail_url: fakeUrl });
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('uploads')
+          .upload(fileName, file);
+
+        if (error) {
+          console.error('Upload error:', error);
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('uploads')
+          .getPublicUrl(fileName);
+
+        onChange({ ...article, thumbnail_url: publicUrl });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
     }
   };
 

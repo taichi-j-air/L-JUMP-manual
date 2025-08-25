@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { FileUpload } from '@/components/ui/file-upload';
-import { BlockEditor, Block } from '@/components/admin/BlockEditor';
+import { EnhancedBlockEditor, Block } from '@/components/admin/EnhancedBlockEditor';
 import { EditArticleModal, EditNewsModal, EditCategoryModal } from '@/components/admin/EditModals';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -414,12 +414,30 @@ const Admin = () => {
     }
   };
 
-  const handleImageUpload = (files: FileList) => {
+  const handleImageUpload = async (files: FileList) => {
     const file = files[0];
     if (file) {
-      // TODO: Implement actual Supabase Storage upload
-      const fakeUrl = URL.createObjectURL(file);
-      setNewArticle({ ...newArticle, thumbnail_url: fakeUrl });
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random().toString(36)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('uploads')
+          .upload(fileName, file);
+
+        if (error) {
+          console.error('Upload error:', error);
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('uploads')
+          .getPublicUrl(fileName);
+
+        setNewArticle({ ...newArticle, thumbnail_url: publicUrl });
+      } catch (error) {
+        console.error('Error uploading file:', error);
+      }
     }
   };
 
@@ -532,9 +550,9 @@ const Admin = () => {
                   {useBlockEditor ? (
                     <div>
                       <Label className="text-sm font-medium mb-2 block">記事内容（ブロックエディタ）</Label>
-                      <BlockEditor
-                        blocks={editorBlocks}
-                        onChange={setEditorBlocks}
+                      <EnhancedBlockEditor 
+                        blocks={editorBlocks} 
+                        onChange={setEditorBlocks} 
                       />
                     </div>
                   ) : (

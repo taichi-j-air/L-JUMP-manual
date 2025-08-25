@@ -1,32 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { News } from "@/hooks/useArticles";
 
-// Mock data for news - will be replaced with database data
-const mockNews = [
-  {
-    id: 1,
-    date: "2024年1月15日",
-    title: "L!JUMP新機能：自動レポート生成機能が追加されました"
-  },
-  {
-    id: 2, 
-    date: "2024年1月10日",
-    title: "データ連携APIの仕様変更について"
-  },
-  {
-    id: 3,
-    date: "2024年1月5日", 
-    title: "年末年始のサポート対応スケジュールについて"
-  },
-  {
-    id: 4,
-    date: "2024年1月3日",
-    title: "メンテナンス完了のお知らせ"
-  }
-];
-
-// Show different number of items based on screen size
-const useNewsItems = () => {
+export const NewsSection = () => {
+  const [newsItems, setNewsItems] = useState<News[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
@@ -35,12 +13,27 @@ const useNewsItems = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
-  return isMobile ? mockNews.slice(0, 3) : mockNews.slice(0, 4);
-};
 
-export const NewsSection = () => {
-  const newsItems = useNewsItems();
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  const fetchNews = async () => {
+    try {
+      const { data } = await supabase
+        .from('news')
+        .select('*')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      setNewsItems(data || []);
+    } catch (error) {
+      console.error('Error fetching news:', error);
+    }
+  };
+
+  const displayedNews = isMobile ? newsItems.slice(0, 3) : newsItems.slice(0, 4);
   
   return (
     <div className="max-w-7xl mx-auto px-4 py-4 md:py-6">
@@ -50,10 +43,10 @@ export const NewsSection = () => {
           新着情報
         </h2>
         <div className="space-y-2 md:space-y-3">
-          {newsItems.map((news) => (
+          {displayedNews.map((news) => (
             <div key={news.id} className="flex items-start space-x-2 md:space-x-4 p-2 md:p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
               <span className="text-xs md:text-sm text-muted-foreground whitespace-nowrap font-medium">
-                {news.date}
+                {new Date(news.created_at).toLocaleDateString('ja-JP')}
               </span>
               <span className="text-xs md:text-sm text-foreground hover:text-ljump-green transition-colors flex-1">
                 {news.title}
