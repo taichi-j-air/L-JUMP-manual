@@ -49,20 +49,16 @@ const Index = () => {
                   ))}
                 </div>
                 
-                {/* Pagination placeholder */}
-                <div className="flex justify-center mt-8 md:mt-12">
-                  <div className="flex space-x-2">
-                    <button className="px-3 md:px-4 py-2 bg-ljump-green text-primary-foreground rounded-lg font-medium text-sm md:text-base">
-                      1
-                    </button>
-                    <button className="px-3 md:px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors text-sm md:text-base">
-                      2
-                    </button>
-                    <button className="px-3 md:px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors text-sm md:text-base">
-                      3
-                    </button>
+                {/* Dynamic Pagination */}
+                {articles.length > 6 && (
+                  <div className="flex justify-center mt-8 md:mt-12">
+                    <div className="flex space-x-2">
+                      <button className="px-3 md:px-4 py-2 bg-ljump-green text-primary-foreground rounded-lg font-medium text-sm md:text-base">
+                        1
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             ) : (
               <div className="text-center py-12">

@@ -151,7 +151,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
       <Card key={block.id} className="mb-4 group">
         <CardContent className="p-4">
           <div className="flex items-start space-x-2">
-            <div className="flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex flex-col space-y-1">
               <Button
                 size="sm"
                 variant="ghost"
@@ -175,7 +175,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               {renderBlockContent(block)}
             </div>
             
-            <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex space-x-1">
               <Button
                 size="sm"
                 variant="ghost"
@@ -495,6 +495,41 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               onChange={(e) => updateBlock(block.id, { ...block.content, code: e.target.value })}
               rows={8}
               className="font-mono"
+            />
+          </div>
+        );
+      
+      case 'video':
+        const convertYouTubeUrl = (url: string) => {
+          // Convert YouTube URLs to embed format
+          const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+          const match = url.match(youtubeRegex);
+          if (match) {
+            return `https://www.youtube.com/embed/${match[1]}`;
+          }
+          return url;
+        };
+
+        return (
+          <div className="space-y-2">
+            <Input
+              placeholder="動画URL (YouTube対応)"
+              value={block.content.url}
+              onChange={(e) => updateBlock(block.id, { ...block.content, url: e.target.value })}
+            />
+            {block.content.url && (
+              <div className="aspect-video">
+                <iframe
+                  src={convertYouTubeUrl(block.content.url)}
+                  className="w-full h-full rounded-lg"
+                  allowFullScreen
+                />
+              </div>
+            )}
+            <Input
+              placeholder="キャプション"
+              value={block.content.caption}
+              onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
             />
           </div>
         );

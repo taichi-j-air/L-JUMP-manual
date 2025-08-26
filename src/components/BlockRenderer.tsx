@@ -99,11 +99,21 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
         );
       
       case 'video':
+        const convertToEmbedUrl = (url: string) => {
+          // Convert YouTube URLs to embed format
+          const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+          const match = url.match(youtubeRegex);
+          if (match) {
+            return `https://www.youtube.com/embed/${match[1]}`;
+          }
+          return url;
+        };
+
         return (
           <div key={block.id} className="mb-4">
             <div className="aspect-video">
               <iframe
-                src={block.content.url}
+                src={convertToEmbedUrl(block.content.url)}
                 className="w-full h-full rounded-lg"
                 allowFullScreen
               />

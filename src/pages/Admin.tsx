@@ -540,7 +540,7 @@ const Admin = () => {
         .upsert({
           key: 'privacy_policy',
           value: content
-        });
+        }, { onConflict: 'key' });
 
       if (error) throw error;
 
@@ -572,7 +572,7 @@ const Admin = () => {
         .upsert({
           key: 'terms_of_service',
           value: content
-        });
+        }, { onConflict: 'key' });
 
       if (error) throw error;
 

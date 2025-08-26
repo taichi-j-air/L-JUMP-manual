@@ -178,15 +178,6 @@ const Article = () => {
           <BlockRenderer blocks={blocks} />
         </div>
 
-        {/* Back to list */}
-        <div className="border-t pt-8">
-          <Link to="/">
-            <Button className="bg-ljump-green hover:bg-ljump-green-dark">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              記事一覧に戻る
-            </Button>
-          </Link>
-        </div>
       </div>
       
       <Footer />

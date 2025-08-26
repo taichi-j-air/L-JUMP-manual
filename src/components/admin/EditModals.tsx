@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileUpload } from '@/components/ui/file-upload';
+import { EnhancedBlockEditor, Block } from '@/components/admin/EnhancedBlockEditor';
 import { Article, Category, News } from '@/hooks/useArticles';
 
 interface EditArticleModalProps {
@@ -27,6 +28,32 @@ export const EditArticleModal: React.FC<EditArticleModalProps> = ({
   onSave,
   onChange
 }) => {
+  const [useBlockEditor, setUseBlockEditor] = useState(false);
+  const [editorBlocks, setEditorBlocks] = useState<Block[]>([]);
+
+  useEffect(() => {
+    if (article) {
+      try {
+        const parsedBlocks = JSON.parse(article.content);
+        if (Array.isArray(parsedBlocks)) {
+          setEditorBlocks(parsedBlocks);
+          setUseBlockEditor(true);
+        } else {
+          setUseBlockEditor(false);
+        }
+      } catch {
+        setUseBlockEditor(false);
+      }
+    }
+  }, [article]);
+
+  const handleBlocksChange = (blocks: Block[]) => {
+    setEditorBlocks(blocks);
+    if (article) {
+      onChange({ ...article, content: JSON.stringify(blocks) });
+    }
+  };
+
   if (!article) return null;
 
   const handleImageUpload = async (files: FileList) => {
@@ -91,12 +118,49 @@ export const EditArticleModal: React.FC<EditArticleModalProps> = ({
             )}
           </div>
 
-          <Textarea
-            placeholder="記事内容"
-            value={article.content}
-            onChange={(e) => onChange({ ...article, content: e.target.value })}
-            rows={15}
-          />
+          {/* Editor Toggle */}
+          <div className="flex items-center space-x-2 mb-4">
+            <Switch
+              id="use-block-editor"
+              checked={useBlockEditor}
+              onCheckedChange={(checked) => {
+                setUseBlockEditor(checked);
+                if (checked && editorBlocks.length === 0) {
+                  // Initialize with current content as paragraph
+                  const initialBlocks: Block[] = [{
+                    id: '1',
+                    type: 'paragraph',
+                    content: { text: article.content },
+                    order: 0
+                  }];
+                  setEditorBlocks(initialBlocks);
+                  onChange({ ...article, content: JSON.stringify(initialBlocks) });
+                } else if (!checked) {
+                  // Convert blocks back to text
+                  onChange({ ...article, content: article.content });
+                }
+              }}
+            />
+            <Label htmlFor="use-block-editor">ブロックエディタを使用</Label>
+          </div>
+
+          {/* Content Editor */}
+          {useBlockEditor ? (
+            <div>
+              <Label className="text-sm font-medium mb-2 block">記事内容 (ブロックエディタ)</Label>
+              <EnhancedBlockEditor
+                blocks={editorBlocks}
+                onChange={handleBlocksChange}
+              />
+            </div>
+          ) : (
+            <Textarea
+              placeholder="記事内容"
+              value={article.content}
+              onChange={(e) => onChange({ ...article, content: e.target.value })}
+              rows={15}
+            />
+          )}
           <Select 
             value={article.category_id || ''} 
             onValueChange={(value) => onChange({ ...article, category_id: value })}
