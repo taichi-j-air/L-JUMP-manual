@@ -174,9 +174,16 @@ const Admin = () => {
         content = JSON.stringify(editorBlocks);
       }
 
+      // Prepare article data with proper UUID handling
+      const articleData = {
+        ...newArticle,
+        content,
+        category_id: newArticle.category_id || null // Convert empty string to null for UUID field
+      };
+
       const { error } = await supabase
         .from('articles')
-        .insert([{ ...newArticle, content }]);
+        .insert([articleData]);
 
       if (error) throw error;
 

@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { BlockRenderer } from "@/components/BlockRenderer";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft } from "lucide-react";
 
 export default function PrivacyPolicy() {
+  const navigate = useNavigate();
   const [content, setContent] = useState("");
   const [blocks, setBlocks] = useState([]);
   const [isBlockContent, setIsBlockContent] = useState(false);
@@ -56,6 +60,19 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <Button
+            onClick={() => navigate(-1)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            戻る
+          </Button>
+        </div>
+        
+        <h1 className="text-3xl font-bold mb-8">プライバシーポリシー</h1>
+        
         {isBlockContent ? (
           <BlockRenderer blocks={blocks} />
         ) : (

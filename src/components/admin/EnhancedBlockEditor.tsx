@@ -202,6 +202,53 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
   const renderTextFormatting = (block: Block) => {
     if (block.type !== 'paragraph' && block.type !== 'heading') return null;
 
+    const handleTextSelection = (textareaRef: HTMLTextAreaElement | null) => {
+      if (!textareaRef) return;
+      
+      const start = textareaRef.selectionStart;
+      const end = textareaRef.selectionEnd;
+      const selectedText = textareaRef.value.substring(start, end);
+      
+      if (selectedText) {
+        return { start, end, selectedText };
+      }
+      return null;
+    };
+
+    const applySelectionFormatting = (formatType: string, value: any, textareaRef: HTMLTextAreaElement | null) => {
+      if (!textareaRef) return;
+      
+      const selection = handleTextSelection(textareaRef);
+      if (!selection) return;
+
+      const { start, end, selectedText } = selection;
+      const beforeText = textareaRef.value.substring(0, start);
+      const afterText = textareaRef.value.substring(end);
+      
+      let formattedText = selectedText;
+      
+      switch (formatType) {
+        case 'backgroundColor':
+          formattedText = `<span style="background-color: ${value}">${selectedText}</span>`;
+          break;
+        case 'color':
+          formattedText = `<span style="color: ${value}">${selectedText}</span>`;
+          break;
+        case 'bold':
+          formattedText = `<strong>${selectedText}</strong>`;
+          break;
+        case 'italic':
+          formattedText = `<em>${selectedText}</em>`;
+          break;
+        case 'underline':
+          formattedText = `<u>${selectedText}</u>`;
+          break;
+      }
+      
+      const newText = beforeText + formattedText + afterText;
+      updateBlock(block.id, { ...block.content, text: newText });
+    };
+
     return (
       <div className="flex flex-wrap gap-2 mb-2 p-2 bg-muted rounded-lg">
         <div className="flex items-center space-x-1 border-r pr-2">
@@ -295,6 +342,18 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
             透明
           </Button>
         </div>
+        
+        <div className="flex items-center space-x-1 border-l pl-2">
+          <span className="text-xs">選択背景:</span>
+          <input
+            type="color"
+            onChange={(e) => {
+              const textarea = document.querySelector(`textarea[data-block-id="${block.id}"]`) as HTMLTextAreaElement;
+              applySelectionFormatting('backgroundColor', e.target.value, textarea);
+            }}
+            className="w-8 h-8 rounded border"
+          />
+        </div>
       </div>
     );
   };
@@ -321,6 +380,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               onChange={(e) => updateBlock(block.id, { ...block.content, text: e.target.value })}
               rows={3}
               style={textStyle}
+              data-block-id={block.id}
             />
           </div>
         );
