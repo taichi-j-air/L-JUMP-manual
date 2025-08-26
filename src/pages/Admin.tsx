@@ -45,6 +45,10 @@ const Admin = () => {
     description: ''
   });
 
+  // Site settings states
+  const [privacyPolicy, setPrivacyPolicy] = useState('');
+  const [termsOfService, setTermsOfService] = useState('');
+
   // Edit states
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [editingNews, setEditingNews] = useState<News | null>(null);
@@ -56,6 +60,7 @@ const Admin = () => {
 
   useEffect(() => {
     fetchAllData();
+    fetchSiteSettings();
   }, []);
 
   const fetchAllData = async () => {
@@ -83,6 +88,25 @@ const Admin = () => {
       setNews(newsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  const fetchSiteSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('key, value')
+        .in('key', ['privacy_policy', 'terms_of_service']);
+
+      if (data) {
+        const privacyData = data.find(item => item.key === 'privacy_policy');
+        const termsData = data.find(item => item.key === 'terms_of_service');
+        
+        setPrivacyPolicy(privacyData?.value || '');
+        setTermsOfService(termsData?.value || '');
+      }
+    } catch (error) {
+      console.error('Error fetching site settings:', error);
     }
   };
 
@@ -441,6 +465,58 @@ const Admin = () => {
     }
   };
 
+  const handleSavePrivacyPolicy = async () => {
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'privacy_policy',
+          value: privacyPolicy
+        })
+        .eq('key', 'privacy_policy');
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "プライバシーポリシーが保存されました"
+      });
+    } catch (error) {
+      console.error('Error saving privacy policy:', error);
+      toast({
+        title: "エラー",
+        description: "プライバシーポリシーの保存に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleSaveTermsOfService = async () => {
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'terms_of_service',
+          value: termsOfService
+        })
+        .eq('key', 'terms_of_service');
+
+      if (error) throw error;
+
+      toast({
+        title: "成功",
+        description: "利用規約が保存されました"
+      });
+    } catch (error) {
+      console.error('Error saving terms of service:', error);
+      toast({
+        title: "エラー",
+        description: "利用規約の保存に失敗しました",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
@@ -789,12 +865,17 @@ const Admin = () => {
                   <CardTitle>プライバシーポリシー編集</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4">プライバシーポリシーの内容を編集できます</p>
+                  <p className="text-muted-foreground mb-4">プライバシーポリシーの内容を編集できます（HTMLタグ使用可）</p>
                   <Textarea
                     placeholder="プライバシーポリシーの内容を入力..."
                     rows={15}
+                    value={privacyPolicy}
+                    onChange={(e) => setPrivacyPolicy(e.target.value)}
                   />
-                  <Button className="mt-4 bg-ljump-green hover:bg-ljump-green-dark">
+                  <Button 
+                    className="mt-4 bg-ljump-green hover:bg-ljump-green-dark"
+                    onClick={handleSavePrivacyPolicy}
+                  >
                     保存
                   </Button>
                 </CardContent>
@@ -807,12 +888,17 @@ const Admin = () => {
                   <CardTitle>利用規約編集</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground mb-4">利用規約の内容を編集できます</p>
+                  <p className="text-muted-foreground mb-4">利用規約の内容を編集できます（HTMLタグ使用可）</p>
                   <Textarea
                     placeholder="利用規約の内容を入力..."
                     rows={15}
+                    value={termsOfService}
+                    onChange={(e) => setTermsOfService(e.target.value)}
                   />
-                  <Button className="mt-4 bg-ljump-green hover:bg-ljump-green-dark">
+                  <Button 
+                    className="mt-4 bg-ljump-green hover:bg-ljump-green-dark"
+                    onClick={handleSaveTermsOfService}
+                  >
                     保存
                   </Button>
                 </CardContent>

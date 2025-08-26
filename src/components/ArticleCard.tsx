@@ -4,7 +4,7 @@ import { Calendar, User } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface ArticleCardProps {
-  id: number;
+  id: string;
   title: string;
   excerpt: string;
   category: string;

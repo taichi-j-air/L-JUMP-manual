@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 
 export const Footer = () => {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
@@ -34,12 +35,12 @@ export const Footer = () => {
         <div className="flex flex-col items-center justify-center space-y-3 md:space-y-4">
           <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-8 text-xs md:text-sm text-muted-foreground">
             <div className="flex items-center space-x-4 md:space-x-8 order-2 md:order-1">
-              <button className="hover:text-ljump-green transition-colors text-xs md:text-sm">
+              <Link to="/privacy-policy" className="hover:text-ljump-green transition-colors text-xs md:text-sm">
                 プライバシーポリシー
-              </button>
-              <button className="hover:text-ljump-green transition-colors text-xs md:text-sm">
+              </Link>
+              <Link to="/terms-of-service" className="hover:text-ljump-green transition-colors text-xs md:text-sm">
                 利用規約
-              </button>
+              </Link>
             </div>
             <span className="text-foreground font-light text-xs md:text-sm order-1 md:order-2">
               © 2024 L!JUMP Manual Site

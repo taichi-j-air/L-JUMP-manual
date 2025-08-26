@@ -36,10 +36,10 @@ const Index = () => {
               <>
                 <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
                   {articles.map((article) => (
-                    <ArticleCard 
-                      key={article.id} 
-                      id={Number(article.id)}
-                      title={article.title}
+                     <ArticleCard 
+                       key={article.id} 
+                       id={article.id}
+                       title={article.title}
                       excerpt={article.excerpt || ''}
                       category={categories.find(cat => cat.id === article.category_id)?.name || 'その他'}
                       publishDate={new Date(article.created_at).toLocaleDateString('ja-JP')}
