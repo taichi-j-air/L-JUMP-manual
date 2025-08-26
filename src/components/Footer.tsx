@@ -30,10 +30,10 @@ export const Footer = () => {
   };
 
   return (
-    <footer className="bg-ljump-green-subtle border-t border-border mt-16">
+    <footer className="bg-black border-t border-border mt-16">
       <div className="max-w-7xl mx-auto px-4 py-6 md:py-8">
         <div className="flex flex-col items-center justify-center space-y-3 md:space-y-4">
-          <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-8 text-xs md:text-sm text-muted-foreground">
+          <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-8 text-xs md:text-sm text-white/70">
             <div className="flex items-center space-x-4 md:space-x-8 order-2 md:order-1">
               <Link to="/privacy-policy" className="hover:text-ljump-green transition-colors text-xs md:text-sm">
                 プライバシーポリシー
@@ -42,7 +42,7 @@ export const Footer = () => {
                 利用規約
               </Link>
             </div>
-            <span className="text-foreground font-light text-xs md:text-sm order-1 md:order-2">
+            <span className="text-white font-light text-xs md:text-sm order-1 md:order-2">
               © 2024 L!JUMP Manual Site
             </span>
           </div>
@@ -51,7 +51,7 @@ export const Footer = () => {
           <div className="hidden md:block">
             <button 
               onClick={() => setShowAdminLogin(true)}
-              className="text-xs text-muted-foreground/50 hover:text-ljump-green transition-colors"
+              className="text-xs text-white/30 hover:text-ljump-green transition-colors"
             >
               L!JUMP-マニュアル
             </button>

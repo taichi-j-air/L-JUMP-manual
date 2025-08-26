@@ -5,7 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Article, Category } from "@/hooks/useArticles";
 
-export const Sidebar = () => {
+interface SidebarProps {
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
+}
+
+export const Sidebar = ({ selectedCategory, onCategoryChange }: SidebarProps) => {
   const [categories, setCategories] = useState<(Category & { count: number })[]>([]);
   const [popularArticles, setPopularArticles] = useState<Article[]>([]);
 
@@ -92,7 +97,12 @@ export const Sidebar = () => {
           {categories.map((category) => (
             <button
               key={category.id}
-              className="w-full text-left px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm text-muted-foreground hover:text-ljump-green hover:bg-muted/50 rounded-md transition-colors flex justify-between items-center"
+              onClick={() => onCategoryChange?.(category.slug)}
+              className={`w-full text-left px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm rounded-md transition-colors flex justify-between items-center ${
+                selectedCategory === category.slug 
+                  ? 'text-ljump-green bg-ljump-green/10' 
+                  : 'text-muted-foreground hover:text-ljump-green hover:bg-muted/50'
+              }`}
             >
               <span>{category.name}</span>
               <span className="text-xs bg-muted px-2 py-1 rounded-full">{category.count}</span>

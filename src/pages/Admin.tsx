@@ -1,18 +1,36 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { FileUpload } from '@/components/ui/file-upload';
-import { EnhancedBlockEditor, Block } from '@/components/admin/EnhancedBlockEditor';
-import { EditArticleModal, EditNewsModal, EditCategoryModal } from '@/components/admin/EditModals';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Article, Category, News } from '@/hooks/useArticles';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileUpload } from "@/components/ui/file-upload";
+import { 
+  Edit, 
+  Trash2, 
+  Plus, 
+  FileText, 
+  Users, 
+  BarChart3, 
+  Settings, 
+  Eye, 
+  EyeOff, 
+  Calendar,
+  User,
+  Tag,
+  Star 
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { EnhancedBlockEditor, Block } from "@/components/admin/EnhancedBlockEditor";
+import { EditArticleModal, EditNewsModal, EditCategoryModal } from "@/components/admin/EditModals";
+import { Footer } from "@/components/Footer";
+import { Article, Category, News } from "@/hooks/useArticles";
 
 const Admin = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -84,6 +102,32 @@ const Admin = () => {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  const handleToggleFeatured = async (articleId: string, featured: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('articles')
+        .update({ featured })
+        .eq('id', articleId);
+
+      if (error) throw error;
+
+      toast({
+        title: featured ? "人気記事に追加しました" : "人気記事から削除しました",
+        description: "記事の設定を更新しました",
+      });
+
+      // Refresh data
+      fetchAllData();
+    } catch (error) {
+      console.error('Error toggling featured status:', error);
+      toast({
+        title: "エラー",
+        description: "記事の設定更新に失敗しました",
+        variant: "destructive",
+      });
+    }
+  };
 
   const fetchAllData = async () => {
     try {
@@ -979,6 +1023,61 @@ const Admin = () => {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Popular Articles Management */}
+              <Card className="bg-card border border-border shadow-card">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-semibold text-foreground flex items-center">
+                    <Star className="h-5 w-5 mr-2 text-ljump-green" />
+                    人気記事管理
+                  </CardTitle>
+                  <CardDescription>人気記事として表示する記事を選択できます</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-medium text-foreground">現在の人気記事</h4>
+                    <div className="space-y-2">
+                      {articles.filter(article => article.featured).map((article) => (
+                        <div key={article.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{article.title}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(article.created_at).toLocaleDateString('ja-JP')}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleToggleFeatured(article.id, false)}
+                          >
+                            削除
+                          </Button>
+                        </div>
+                      ))}
+                      {articles.filter(article => article.featured).length === 0 && (
+                        <p className="text-sm text-muted-foreground">人気記事が設定されていません</p>
+                      )}
+                    </div>
+                    
+                    <h4 className="text-sm font-medium text-foreground pt-4">人気記事に追加</h4>
+                    <div className="space-y-2">
+                      {articles.filter(article => article.published && !article.featured).slice(0, 10).map((article) => (
+                        <div key={article.id} className="flex items-center justify-between p-3 bg-background border border-border rounded-md">
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{article.title}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(article.created_at).toLocaleDateString('ja-JP')}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={() => handleToggleFeatured(article.id, true)}
+                            className="bg-ljump-green hover:bg-ljump-green-dark"
+                          >
+                            追加
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

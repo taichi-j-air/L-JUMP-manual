@@ -121,63 +121,63 @@ const Article = () => {
       <Header />
       
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Link to="/">
-            <Button variant="ghost" className="p-0 h-auto text-muted-foreground hover:text-ljump-green">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              記事一覧に戻る
-            </Button>
-          </Link>
-        </div>
-
-        {/* Article Header */}
-        <div className="mb-8">
+        <div className="bg-card border border-border rounded-lg shadow-card overflow-hidden">
+          {/* Article Header with thumbnail */}
           {article.thumbnail_url && (
-            <img 
-              src={article.thumbnail_url} 
-              alt={article.title}
-              className="w-full h-64 md:h-96 object-cover rounded-lg mb-6"
-            />
+            <div className="aspect-video w-full">
+              <img
+                src={article.thumbnail_url}
+                alt={article.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
           )}
           
-          <div className="flex items-center justify-between mb-4">
-            {category && (
-              <Badge 
-                variant="secondary" 
-                className="bg-ljump-green/10 text-ljump-green hover:bg-ljump-green/20"
-              >
-                {category.name}
-              </Badge>
-            )}
-            <div className="flex items-center text-sm text-muted-foreground space-x-4">
-              <div className="flex items-center space-x-1">
-                <Calendar size={14} />
-                <span>{new Date(article.created_at).toLocaleDateString('ja-JP')}</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <User size={14} />
-                <span>{article.author}</span>
+          {/* Article content container */}
+          <div className="p-6 md:p-8">
+            <div className="mb-6">
+              {/* Category badge */}
+              {category && (
+                <Badge 
+                  variant="secondary" 
+                  className="bg-ljump-green/10 text-ljump-green hover:bg-ljump-green/20 mb-4"
+                >
+                  {category.name}
+                </Badge>
+              )}
+              
+              {/* Title */}
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                {article.title}
+              </h1>
+              
+              {/* Subtitle/Excerpt within content frame */}
+              {article.excerpt && (
+                <p className="text-muted-foreground mb-4 text-sm md:text-base leading-relaxed bg-muted/30 p-4 rounded-md border-l-4 border-ljump-green">
+                  {article.excerpt}
+                </p>
+              )}
+              
+              {/* Meta information */}
+              <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
+                <div className="flex items-center space-x-1">
+                  <User size={14} />
+                  <span>{article.author}</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <Calendar size={14} />
+                  <span>{new Date(article.created_at).toLocaleDateString('ja-JP')}</span>
+                </div>
+                {article.updated_at !== article.created_at && (
+                  <span>更新日: {new Date(article.updated_at).toLocaleDateString('ja-JP')}</span>
+                )}
               </div>
             </div>
+            
+            {/* Article Content */}
+            <BlockRenderer blocks={blocks} />
           </div>
-          
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
-            {article.title}
-          </h1>
-          
-          {article.excerpt && (
-            <p className="text-lg text-muted-foreground mb-6">
-              {article.excerpt}
-            </p>
-          )}
         </div>
-
-        {/* Article Content */}
-        <div className="mb-12">
-          <BlockRenderer blocks={blocks} />
-        </div>
-
       </div>
       
       <Footer />

@@ -73,45 +73,52 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
               onClick={() => setIsMobileMenuOpen(false)}
             />
             <div className="fixed top-0 right-0 h-full w-80 bg-background border-l border-border z-50 shadow-lg transform transition-transform">
-              <div className="p-4 border-b border-border">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">メニュー</span>
-                  <Button
-                    variant="ghost"
+              {/* Main content with close button and categories */}
+              <div className="flex flex-col h-full">
+                {/* Header with close button */}
+                <div className="flex justify-between items-center p-4 border-b border-border">
+                  <h2 className="text-lg font-semibold text-foreground">カテゴリ</h2>
+                  <Button 
+                    variant="ghost" 
                     size="sm"
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="p-2"
                   >
-                    <X size={20} />
+                    <X className="h-5 w-5" />
                   </Button>
                 </div>
-              </div>
-              
-              <div className="p-4 space-y-4">
-                <Button 
-                  className="w-full bg-ljump-green hover:bg-ljump-green-dark text-primary-foreground"
-                  onClick={() => window.open('https://ljump.example.com', '_blank')}
-                >
-                  L!JUMPを使ってみる
-                </Button>
                 
-                <div>
-                  <h3 className="font-medium mb-2">カテゴリ</h3>
-                  <div className="space-y-2">
-                    {categories.map((category) => (
-                      <Button
-                        key={category}
-                        variant={selectedCategory === category ? "default" : "ghost"}
-                        className="w-full justify-start"
-                        onClick={() => {
-                          onCategoryChange?.(category);
-                          setIsMobileMenuOpen(false);
-                        }}
-                      >
-                        {category}
-                      </Button>
-                    ))}
-                  </div>
+                {/* Categories */}
+                <div className="flex-1 p-4 space-y-2">
+                  <button
+                    onClick={() => {
+                      onCategoryChange?.('');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                      !selectedCategory || selectedCategory === '' || selectedCategory === 'すべて'
+                        ? 'bg-ljump-green text-white' 
+                        : 'text-muted-foreground hover:text-ljump-green hover:bg-muted'
+                    }`}
+                  >
+                    すべて
+                  </button>
+                  {categories.slice(1).map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => {
+                        onCategoryChange?.(category);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
+                        selectedCategory === category 
+                          ? 'bg-ljump-green text-white' 
+                          : 'text-muted-foreground hover:text-ljump-green hover:bg-muted'
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

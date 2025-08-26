@@ -132,7 +132,10 @@ const Index = () => {
           
           {/* Sidebar */}
           <div className="lg:block">
-            <Sidebar />
+        <Sidebar 
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
           </div>
         </div>
       </div>
