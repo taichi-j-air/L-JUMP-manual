@@ -93,6 +93,7 @@ export type Database = {
       }
       news: {
         Row: {
+          article_id: string | null
           content: string | null
           created_at: string
           id: string
@@ -101,6 +102,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          article_id?: string | null
           content?: string | null
           created_at?: string
           id?: string
@@ -109,6 +111,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          article_id?: string | null
           content?: string | null
           created_at?: string
           id?: string
@@ -116,7 +119,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "news_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       site_settings: {
         Row: {
