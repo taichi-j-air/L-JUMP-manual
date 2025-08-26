@@ -28,6 +28,7 @@ export interface News {
   content?: string;
   published: boolean;
   created_at: string;
+  article_id?: string;
 }
 
 export const useArticles = () => {

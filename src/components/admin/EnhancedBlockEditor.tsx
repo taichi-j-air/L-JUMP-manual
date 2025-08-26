@@ -136,8 +136,8 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
         backgroundColor: 'transparent',
         alignment: 'left'
       };
-      case 'image': return { url: '', alt: '', caption: '' };
-      case 'video': return { url: '', caption: '' };
+      case 'image': return { url: '', alt: '', caption: '', size: 'medium' };
+      case 'video': return { url: '', caption: '', borderColor: '#000000' };
       case 'list': return { items: [''], type: 'bullet' };
       case 'quote': return { text: '', author: '', backgroundColor: '#f3f4f6' };
       case 'code': return { code: '', language: 'javascript' };
@@ -433,8 +433,30 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               accept="image/*"
             />
             {block.content.url && (
-              <img src={block.content.url} alt={block.content.alt} className="max-w-full h-auto rounded" />
+              <img 
+                src={block.content.url} 
+                alt={block.content.alt} 
+                className={`max-w-full h-auto rounded ${
+                  block.content.size === 'small' ? 'w-1/4' :
+                  block.content.size === 'large' ? 'w-full' : 'w-1/2'
+                }`} 
+              />
             )}
+            <div className="flex space-x-2">
+              <Select
+                value={block.content.size || 'medium'}
+                onValueChange={(value) => updateBlock(block.id, { ...block.content, size: value })}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="サイズ" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="small">小</SelectItem>
+                  <SelectItem value="medium">中</SelectItem>
+                  <SelectItem value="large">大</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Input
               placeholder="代替テキスト"
               value={block.content.alt}
@@ -577,11 +599,21 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               value={block.content.url}
               onChange={(e) => updateBlock(block.id, { ...block.content, url: e.target.value })}
             />
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">枠線色:</span>
+              <input
+                type="color"
+                value={block.content.borderColor || '#000000'}
+                onChange={(e) => updateBlock(block.id, { ...block.content, borderColor: e.target.value })}
+                className="w-8 h-8 rounded border"
+              />
+            </div>
             {block.content.url && (
               <div className="aspect-video">
                 <iframe
                   src={convertYouTubeUrl(block.content.url)}
                   className="w-full h-full rounded-lg"
+                  style={{ border: `3px solid ${block.content.borderColor || '#000000'}` }}
                   allowFullScreen
                 />
               </div>

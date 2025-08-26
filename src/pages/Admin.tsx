@@ -41,7 +41,8 @@ const Admin = () => {
   const [newNews, setNewNews] = useState({
     title: '',
     content: '',
-    published: false
+    published: false,
+    article_id: ''
   });
 
   // Form states for new category
@@ -239,7 +240,8 @@ const Admin = () => {
       setNewNews({
         title: '',
         content: '',
-        published: false
+        published: false,
+        article_id: ''
       });
 
       fetchAllData();
@@ -830,6 +832,19 @@ const Admin = () => {
                     value={newNews.title}
                     onChange={(e) => setNewNews({ ...newNews, title: e.target.value })}
                   />
+                  <Select value={newNews.article_id} onValueChange={(value) => setNewNews({ ...newNews, article_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="記事を選択（オプション）" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">記事リンクなし</SelectItem>
+                      {articles.filter(article => article.published).slice(0, 5).map((article) => (
+                        <SelectItem key={article.id} value={article.id}>
+                          {article.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Textarea
                     placeholder="ニュース内容（オプション）"
                     value={newNews.content}

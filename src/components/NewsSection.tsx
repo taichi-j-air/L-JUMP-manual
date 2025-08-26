@@ -33,6 +33,13 @@ export const NewsSection = () => {
     }
   };
 
+  const handleNewsClick = (newsItem: News) => {
+    if (newsItem.article_id) {
+      // Navigate to the linked article
+      window.location.href = `/article/${newsItem.article_id}`;
+    }
+  };
+
   const displayedNews = isMobile ? newsItems.slice(0, 3) : newsItems.slice(0, 4);
   
   return (
@@ -44,11 +51,19 @@ export const NewsSection = () => {
         </h2>
         <div className="space-y-2 md:space-y-3">
           {displayedNews.map((news) => (
-            <div key={news.id} className="flex items-start space-x-2 md:space-x-4 p-2 md:p-3 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+            <div 
+              key={news.id} 
+              className={`flex items-start space-x-2 md:space-x-4 p-2 md:p-3 rounded-lg hover:bg-muted/50 transition-colors ${
+                news.article_id ? 'cursor-pointer' : ''
+              }`}
+              onClick={() => handleNewsClick(news)}
+            >
               <span className="text-xs md:text-sm text-muted-foreground whitespace-nowrap font-medium">
                 {new Date(news.created_at).toLocaleDateString('ja-JP')}
               </span>
-              <span className="text-xs md:text-sm text-foreground hover:text-ljump-green transition-colors flex-1">
+              <span className={`text-xs md:text-sm text-foreground hover:text-ljump-green transition-colors flex-1 ${
+                news.article_id ? 'underline decoration-dotted' : ''
+              }`}>
                 {news.title}
               </span>
             </div>

@@ -52,7 +52,10 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
             <img 
               src={block.content.url} 
               alt={block.content.alt || ''} 
-              className="max-w-full h-auto rounded-lg"
+              className={`max-w-full h-auto rounded-lg ${
+                block.content.size === 'small' ? 'w-1/4' :
+                block.content.size === 'large' ? 'w-full' : 'w-1/2'
+              }`}
             />
             {block.content.caption && (
               <p className="text-sm text-muted-foreground mt-2 italic text-center">
@@ -115,6 +118,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
               <iframe
                 src={convertToEmbedUrl(block.content.url)}
                 className="w-full h-full rounded-lg"
+                style={{ border: `3px solid ${block.content.borderColor || '#000000'}` }}
                 allowFullScreen
               />
             </div>

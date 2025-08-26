@@ -12,8 +12,14 @@ const categories = [
   "トラブルシューティング"
 ];
 
-export const Header = () => {
-  const [selectedCategory, setSelectedCategory] = useState("すべて");
+interface HeaderProps {
+  selectedCategory?: string;
+  onCategoryChange?: (category: string) => void;
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+}
+
+export const Header = ({ selectedCategory = "すべて", onCategoryChange, searchQuery = "", onSearchChange }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -27,21 +33,6 @@ export const Header = () => {
             className="h-10 w-auto"
           />
           <span className="text-lg font-medium text-foreground">設定/操作マニュアル</span>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-48 bg-background">
-              <SelectValue placeholder="カテゴリを選択" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover border border-border shadow-lg z-50">
-              {categories.map((category) => (
-                <SelectItem key={category} value={category} className="hover:bg-muted">
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         <Button 
@@ -74,29 +65,57 @@ export const Header = () => {
           </Button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Side Menu Overlay */}
         {isMobileMenuOpen && (
-          <div className="bg-muted border-t border-border p-4 space-y-3">
-            <Button 
-              className="w-full bg-ljump-green hover:bg-ljump-green-dark text-primary-foreground"
-              onClick={() => window.open('https://ljump.example.com', '_blank')}
-            >
-              L!JUMPを使ってみる
-            </Button>
-            
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full bg-background">
-                <SelectValue placeholder="カテゴリを選択" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category} className="hover:bg-muted">
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <>
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40" 
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            <div className="fixed top-0 right-0 h-full w-80 bg-background border-l border-border z-50 shadow-lg transform transition-transform">
+              <div className="p-4 border-b border-border">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">メニュー</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="p-2"
+                  >
+                    <X size={20} />
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="p-4 space-y-4">
+                <Button 
+                  className="w-full bg-ljump-green hover:bg-ljump-green-dark text-primary-foreground"
+                  onClick={() => window.open('https://ljump.example.com', '_blank')}
+                >
+                  L!JUMPを使ってみる
+                </Button>
+                
+                <div>
+                  <h3 className="font-medium mb-2">カテゴリ</h3>
+                  <div className="space-y-2">
+                    {categories.map((category) => (
+                      <Button
+                        key={category}
+                        variant={selectedCategory === category ? "default" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => {
+                          onCategoryChange?.(category);
+                          setIsMobileMenuOpen(false);
+                        }}
+                      >
+                        {category}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </header>

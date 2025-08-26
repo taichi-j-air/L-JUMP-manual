@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-export const SearchBox = () => {
-  const [searchQuery, setSearchQuery] = useState("");
+interface SearchBoxProps {
+  searchQuery?: string;
+  onSearchChange?: (query: string) => void;
+}
+
+export const SearchBox = ({ searchQuery = "", onSearchChange }: SearchBoxProps) => {
+  const [localQuery, setLocalQuery] = useState(searchQuery);
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
   // Mock suggestions for demo
@@ -16,7 +21,8 @@ export const SearchBox = () => {
   ];
 
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
+    setLocalQuery(value);
+    onSearchChange?.(value);
     if (value.length > 0) {
       const filtered = mockSuggestions.filter(suggestion =>
         suggestion.toLowerCase().includes(value.toLowerCase())
@@ -34,9 +40,9 @@ export const SearchBox = () => {
         <Input
           type="text"
           placeholder="記事を検索..."
-          value={searchQuery}
+          value={localQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
-          className="pl-12 pr-6 py-4 w-full text-lg bg-background border-2 border-ljump-green rounded-2xl shadow-sm focus:ring-2 focus:ring-ljump-green focus:border-ljump-green md:border-2 md:border-ljump-green border border-border"
+          className="pl-12 pr-6 py-4 md:py-6 w-full text-lg bg-background border-2 border-ljump-green rounded-2xl shadow-sm focus:ring-2 focus:ring-ljump-green focus:border-ljump-green md:border-2 md:border-ljump-green border border-border"
         />
       </div>
       
@@ -47,7 +53,8 @@ export const SearchBox = () => {
               key={index}
               className="px-4 py-2 hover:bg-muted cursor-pointer text-sm border-b border-border last:border-b-0"
               onClick={() => {
-                setSearchQuery(suggestion);
+                setLocalQuery(suggestion);
+                onSearchChange?.(suggestion);
                 setSuggestions([]);
               }}
             >
