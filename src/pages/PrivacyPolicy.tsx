@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { BlockRenderer } from "@/components/BlockRenderer";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function PrivacyPolicy() {
   const [content, setContent] = useState("");
+  const [blocks, setBlocks] = useState([]);
+  const [isBlockContent, setIsBlockContent] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +22,20 @@ export default function PrivacyPolicy() {
         .eq('key', 'privacy_policy')
         .single();
       
-      setContent(data?.value || '<p>プライバシーポリシーが設定されていません。</p>');
+      const contentValue = data?.value || '<p>プライバシーポリシーが設定されていません。</p>';
+      
+      // Try to parse as JSON (block editor content) first
+      try {
+        const parsed = JSON.parse(contentValue);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setBlocks(parsed);
+          setIsBlockContent(true);
+        } else {
+          setContent(contentValue);
+        }
+      } catch {
+        setContent(contentValue);
+      }
     } catch (error) {
       console.error('Error fetching privacy policy:', error);
       setContent('<p>プライバシーポリシーの読み込みに失敗しました。</p>');
@@ -40,10 +56,14 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div 
-          className="prose prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
+        {isBlockContent ? (
+          <BlockRenderer blocks={blocks} />
+        ) : (
+          <div 
+            className="prose prose-lg max-w-none"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        )}
       </main>
       <Footer />
     </div>

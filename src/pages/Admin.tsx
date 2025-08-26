@@ -19,6 +19,12 @@ const Admin = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const { toast } = useToast();
+  
+  // Current tab state synced with URL hash
+  const [currentTab, setCurrentTab] = useState(() => {
+    const hash = window.location.hash.replace('#', '');
+    return ['articles', 'news', 'categories', 'privacy', 'terms'].includes(hash) ? hash : 'articles';
+  });
 
   // Form states for new article
   const [newArticle, setNewArticle] = useState({
@@ -48,6 +54,10 @@ const Admin = () => {
   // Site settings states
   const [privacyPolicy, setPrivacyPolicy] = useState('');
   const [termsOfService, setTermsOfService] = useState('');
+  const [privacyBlocks, setPrivacyBlocks] = useState<Block[]>([]);
+  const [termsBlocks, setTermsBlocks] = useState<Block[]>([]);
+  const [usePrivacyBlockEditor, setUsePrivacyBlockEditor] = useState(false);
+  const [useTermsBlockEditor, setUseTermsBlockEditor] = useState(false);
 
   // Edit states
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
@@ -61,6 +71,17 @@ const Admin = () => {
   useEffect(() => {
     fetchAllData();
     fetchSiteSettings();
+    
+    // Listen for hash changes
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (['articles', 'news', 'categories', 'privacy', 'terms'].includes(hash)) {
+        setCurrentTab(hash);
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const fetchAllData = async () => {
@@ -102,8 +123,33 @@ const Admin = () => {
         const privacyData = data.find(item => item.key === 'privacy_policy');
         const termsData = data.find(item => item.key === 'terms_of_service');
         
-        setPrivacyPolicy(privacyData?.value || '');
-        setTermsOfService(termsData?.value || '');
+        const privacyContent = privacyData?.value || '';
+        const termsContent = termsData?.value || '';
+        
+        // Try to parse as JSON (block editor content) first, fallback to plain text
+        try {
+          const privacyParsed = JSON.parse(privacyContent);
+          if (Array.isArray(privacyParsed) && privacyParsed.length > 0) {
+            setPrivacyBlocks(privacyParsed);
+            setUsePrivacyBlockEditor(true);
+          } else {
+            setPrivacyPolicy(privacyContent);
+          }
+        } catch {
+          setPrivacyPolicy(privacyContent);
+        }
+        
+        try {
+          const termsParsed = JSON.parse(termsContent);
+          if (Array.isArray(termsParsed) && termsParsed.length > 0) {
+            setTermsBlocks(termsParsed);
+            setUseTermsBlockEditor(true);
+          } else {
+            setTermsOfService(termsContent);
+          }
+        } catch {
+          setTermsOfService(termsContent);
+        }
       }
     } catch (error) {
       console.error('Error fetching site settings:', error);
@@ -443,7 +489,7 @@ const Admin = () => {
     if (file) {
       try {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random().toString(36)}.${fileExt}`;
+        const fileName = `${Date.now()}_${Math.random().toString(36)}.${fileExt}`;
         
         const { data, error } = await supabase.storage
           .from('uploads')
@@ -451,6 +497,11 @@ const Admin = () => {
 
         if (error) {
           console.error('Upload error:', error);
+          toast({
+            title: "エラー",
+            description: "画像のアップロードに失敗しました",
+            variant: "destructive"
+          });
           return;
         }
 
@@ -459,21 +510,37 @@ const Admin = () => {
           .getPublicUrl(fileName);
 
         setNewArticle({ ...newArticle, thumbnail_url: publicUrl });
+        
+        toast({
+          title: "成功",
+          description: "画像がアップロードされました"
+        });
       } catch (error) {
         console.error('Error uploading file:', error);
+        toast({
+          title: "エラー",
+          description: "画像のアップロードに失敗しました",
+          variant: "destructive"
+        });
       }
     }
   };
 
   const handleSavePrivacyPolicy = async () => {
     try {
+      let content = privacyPolicy;
+      
+      // If using block editor, convert blocks to content
+      if (usePrivacyBlockEditor && privacyBlocks.length > 0) {
+        content = JSON.stringify(privacyBlocks);
+      }
+      
       const { error } = await supabase
         .from('site_settings')
         .upsert({
           key: 'privacy_policy',
-          value: privacyPolicy
-        })
-        .eq('key', 'privacy_policy');
+          value: content
+        });
 
       if (error) throw error;
 
@@ -493,13 +560,19 @@ const Admin = () => {
 
   const handleSaveTermsOfService = async () => {
     try {
+      let content = termsOfService;
+      
+      // If using block editor, convert blocks to content
+      if (useTermsBlockEditor && termsBlocks.length > 0) {
+        content = JSON.stringify(termsBlocks);
+      }
+      
       const { error } = await supabase
         .from('site_settings')
         .upsert({
           key: 'terms_of_service',
-          value: termsOfService
-        })
-        .eq('key', 'terms_of_service');
+          value: content
+        });
 
       if (error) throw error;
 
@@ -555,13 +628,38 @@ const Admin = () => {
             <h1 className="text-3xl font-bold text-foreground">管理者ページ</h1>
           </div>
 
-          <Tabs defaultValue="articles" className="space-y-6">
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="articles">記事管理</TabsTrigger>
-              <TabsTrigger value="news">ニュース管理</TabsTrigger>
-              <TabsTrigger value="categories">カテゴリ管理</TabsTrigger>
-              <TabsTrigger value="privacy">プライバシーポリシー</TabsTrigger>
-              <TabsTrigger value="terms">利用規約</TabsTrigger>
+              <TabsTrigger 
+                value="articles"
+                onClick={() => window.location.hash = 'articles'}
+              >
+                記事管理
+              </TabsTrigger>
+              <TabsTrigger 
+                value="news"
+                onClick={() => window.location.hash = 'news'}
+              >
+                ニュース管理
+              </TabsTrigger>
+              <TabsTrigger 
+                value="categories"
+                onClick={() => window.location.hash = 'categories'}
+              >
+                カテゴリ管理
+              </TabsTrigger>
+              <TabsTrigger 
+                value="privacy"
+                onClick={() => window.location.hash = 'privacy'}
+              >
+                プライバシーポリシー
+              </TabsTrigger>
+              <TabsTrigger 
+                value="terms"
+                onClick={() => window.location.hash = 'terms'}
+              >
+                利用規約
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="articles" className="space-y-6">
@@ -864,16 +962,42 @@ const Admin = () => {
                 <CardHeader>
                   <CardTitle>プライバシーポリシー編集</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">プライバシーポリシーの内容を編集できます（HTMLタグ使用可）</p>
-                  <Textarea
-                    placeholder="プライバシーポリシーの内容を入力..."
-                    rows={15}
-                    value={privacyPolicy}
-                    onChange={(e) => setPrivacyPolicy(e.target.value)}
-                  />
+                <CardContent className="space-y-4">
+                  {/* Editor Mode Toggle */}
+                  <div className="flex items-center space-x-2 p-4 bg-muted/50 rounded-lg">
+                    <Switch
+                      id="privacy-block-editor"
+                      checked={usePrivacyBlockEditor}
+                      onCheckedChange={setUsePrivacyBlockEditor}
+                    />
+                    <Label htmlFor="privacy-block-editor" className="cursor-pointer">
+                      ブロックエディタを使用（高度な編集機能）
+                    </Label>
+                  </div>
+
+                  {/* Content Editor */}
+                  {usePrivacyBlockEditor ? (
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">プライバシーポリシー内容（ブロックエディタ）</Label>
+                      <EnhancedBlockEditor 
+                        blocks={privacyBlocks} 
+                        onChange={setPrivacyBlocks} 
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-muted-foreground mb-4">プライバシーポリシーの内容を編集できます（HTMLタグ使用可）</p>
+                      <Textarea
+                        placeholder="プライバシーポリシーの内容を入力..."
+                        rows={15}
+                        value={privacyPolicy}
+                        onChange={(e) => setPrivacyPolicy(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  
                   <Button 
-                    className="mt-4 bg-ljump-green hover:bg-ljump-green-dark"
+                    className="bg-ljump-green hover:bg-ljump-green-dark"
                     onClick={handleSavePrivacyPolicy}
                   >
                     保存
@@ -887,16 +1011,42 @@ const Admin = () => {
                 <CardHeader>
                   <CardTitle>利用規約編集</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">利用規約の内容を編集できます（HTMLタグ使用可）</p>
-                  <Textarea
-                    placeholder="利用規約の内容を入力..."
-                    rows={15}
-                    value={termsOfService}
-                    onChange={(e) => setTermsOfService(e.target.value)}
-                  />
+                <CardContent className="space-y-4">
+                  {/* Editor Mode Toggle */}
+                  <div className="flex items-center space-x-2 p-4 bg-muted/50 rounded-lg">
+                    <Switch
+                      id="terms-block-editor"
+                      checked={useTermsBlockEditor}
+                      onCheckedChange={setUseTermsBlockEditor}
+                    />
+                    <Label htmlFor="terms-block-editor" className="cursor-pointer">
+                      ブロックエディタを使用（高度な編集機能）
+                    </Label>
+                  </div>
+
+                  {/* Content Editor */}
+                  {useTermsBlockEditor ? (
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">利用規約内容（ブロックエディタ）</Label>
+                      <EnhancedBlockEditor 
+                        blocks={termsBlocks} 
+                        onChange={setTermsBlocks} 
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-muted-foreground mb-4">利用規約の内容を編集できます（HTMLタグ使用可）</p>
+                      <Textarea
+                        placeholder="利用規約の内容を入力..."
+                        rows={15}
+                        value={termsOfService}
+                        onChange={(e) => setTermsOfService(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  
                   <Button 
-                    className="mt-4 bg-ljump-green hover:bg-ljump-green-dark"
+                    className="bg-ljump-green hover:bg-ljump-green-dark"
                     onClick={handleSaveTermsOfService}
                   >
                     保存

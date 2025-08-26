@@ -94,7 +94,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36)}.${fileExt}`;
+      const fileName = `${Date.now()}_${Math.random().toString(36)}.${fileExt}`;
       
       const { data, error } = await supabase.storage
         .from('uploads')
