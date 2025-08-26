@@ -226,9 +226,14 @@ const Admin = () => {
     }
 
     try {
+      const newsData = {
+        ...newNews,
+        article_id: newNews.article_id === "none" ? null : newNews.article_id || null
+      };
+
       const { error } = await supabase
         .from('news')
-        .insert([newNews]);
+        .insert([newsData]);
 
       if (error) throw error;
 
@@ -837,7 +842,7 @@ const Admin = () => {
                       <SelectValue placeholder="記事を選択（オプション）" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">記事リンクなし</SelectItem>
+                      <SelectItem value="none">記事リンクなし</SelectItem>
                       {articles.filter(article => article.published).slice(0, 5).map((article) => (
                         <SelectItem key={article.id} value={article.id}>
                           {article.title}
