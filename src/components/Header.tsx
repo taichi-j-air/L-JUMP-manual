@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Menu, X } from "lucide-react";
@@ -26,14 +27,14 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
     <header className="bg-background border-b-4 border-ljump-green sticky top-0 z-50 shadow-sm">
       {/* Desktop Header */}
       <div className="hidden md:flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-        <div className="flex items-center space-x-4">
+        <Link to="/" className="flex items-center space-x-4 hover:opacity-80 transition-opacity">
           <img 
             src="/lovable-uploads/b35433d3-00d4-4ea7-9996-76c1f655f289.png" 
             alt="L!JUMP Logo" 
             className="h-10 w-auto"
           />
           <span className="text-lg font-medium text-foreground">設定/操作マニュアル</span>
-        </div>
+        </Link>
 
         <Button 
           className="bg-ljump-green hover:bg-ljump-green-dark text-primary-foreground font-medium px-6 py-2 rounded-lg transition-colors shadow-elegant"
@@ -46,14 +47,14 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
       {/* Mobile Header */}
       <div className="md:hidden">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex flex-col">
+          <Link to="/" className="flex flex-col hover:opacity-80 transition-opacity">
             <img 
               src="/lovable-uploads/b35433d3-00d4-4ea7-9996-76c1f655f289.png" 
               alt="L!JUMP Logo" 
               className="h-8 w-auto mb-1"
             />
             <span className="text-xs text-muted-foreground">設定/操作マニュアル</span>
-          </div>
+          </Link>
           
           <Button
             variant="ghost"
@@ -92,7 +93,7 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
                 <div className="flex-1 p-4 space-y-2">
                   <button
                     onClick={() => {
-                      onCategoryChange?.('');
+                      onCategoryChange?.('すべて');
                       setIsMobileMenuOpen(false);
                     }}
                     className={`w-full text-left px-3 py-2 rounded-md transition-colors ${

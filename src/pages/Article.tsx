@@ -120,8 +120,18 @@ const Article = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-card border border-border rounded-lg shadow-card overflow-hidden">
+      {/* Back button */}
+      <div className="max-w-4xl mx-auto px-4 pt-4 pb-2">
+        <Link to="/">
+          <Button variant="ghost" className="text-ljump-green hover:text-ljump-green-dark hover:bg-ljump-green/10">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            記事一覧に戻る
+          </Button>
+        </Link>
+      </div>
+      
+      <div className="max-w-4xl mx-auto px-2 md:px-4 pb-8">
+        <div className="bg-card border-0 md:border md:border-border md:rounded-lg md:shadow-card overflow-hidden">
           {/* Article Header with thumbnail */}
           {article.thumbnail_url && (
             <div className="aspect-video w-full">
@@ -134,7 +144,7 @@ const Article = () => {
           )}
           
           {/* Article content container */}
-          <div className="p-6 md:p-8">
+          <div className="p-4 md:p-6 lg:p-8">
             <div className="mb-6">
               {/* Category badge */}
               {category && (

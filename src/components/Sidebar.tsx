@@ -46,7 +46,7 @@ export const Sidebar = ({ selectedCategory, onCategoryChange }: SidebarProps) =>
           .eq('published', true);
 
         setCategories([
-          { id: 'all', name: '全体', slug: 'all', count: totalCount || 0 },
+          { id: 'all', name: '全体', slug: 'すべて', count: totalCount || 0 },
           ...categoriesWithCounts
         ]);
       }
@@ -97,9 +97,9 @@ export const Sidebar = ({ selectedCategory, onCategoryChange }: SidebarProps) =>
           {categories.map((category) => (
             <button
               key={category.id}
-              onClick={() => onCategoryChange?.(category.slug)}
+              onClick={() => onCategoryChange?.(category.slug === 'すべて' ? 'すべて' : category.name)}
               className={`w-full text-left px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm rounded-md transition-colors flex justify-between items-center ${
-                selectedCategory === category.slug 
+                selectedCategory === (category.slug === 'すべて' ? 'すべて' : category.name) 
                   ? 'text-ljump-green bg-ljump-green/10' 
                   : 'text-muted-foreground hover:text-ljump-green hover:bg-muted/50'
               }`}
