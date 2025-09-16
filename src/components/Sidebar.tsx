@@ -24,6 +24,7 @@ export const Sidebar = ({ selectedCategory, onCategoryChange }: SidebarProps) =>
       const { data: categoriesData } = await supabase
         .from('categories')
         .select('*')
+        .order('display_order', { ascending: true })
         .order('name');
 
       if (categoriesData) {
@@ -101,7 +102,7 @@ export const Sidebar = ({ selectedCategory, onCategoryChange }: SidebarProps) =>
               className={`w-full text-left px-2 md:px-3 py-1 md:py-2 text-xs md:text-sm rounded-md transition-colors flex justify-between items-center ${
                 selectedCategory === (category.slug === 'すべて' ? 'すべて' : category.name) 
                   ? 'text-ljump-green bg-ljump-green/10' 
-                  : 'text-muted-foreground hover:text-ljump-green hover:bg-muted/50'
+                  : 'text-foreground hover:text-ljump-green hover:bg-muted/50'
               }`}
             >
               <span>{category.name}</span>

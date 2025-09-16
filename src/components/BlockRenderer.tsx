@@ -6,6 +6,26 @@ interface BlockRendererProps {
 }
 
 export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
+  const convertURLsToLinks = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.split(urlRegex).map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-ljump-green hover:text-ljump-green-dark underline"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   const renderBlock = (block: Block) => {
     const textStyle = (block.type === 'paragraph' || block.type === 'heading') ? {
       fontSize: block.content.fontSize || '16px',
@@ -25,7 +45,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
             style={textStyle}
             className="mb-4 whitespace-pre-wrap"
           >
-            {block.content.text}
+            {convertURLsToLinks(block.content.text)}
           </p>
         );
       
@@ -42,7 +62,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
               'text-lg'
             }`}
           >
-            {block.content.text}
+            {convertURLsToLinks(block.content.text)}
           </HeadingTag>
         );
       

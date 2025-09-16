@@ -20,6 +20,7 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
+  display_order?: number;
 }
 
 export interface News {

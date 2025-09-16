@@ -304,6 +304,12 @@ export const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
             value={category.description || ''}
             onChange={(e) => onChange({ ...category, description: e.target.value })}
           />
+          <Input
+            type="number"
+            placeholder="表示順序（数字が小さいほど上に表示）"
+            value={category.display_order || 0}
+            onChange={(e) => onChange({ ...category, display_order: parseInt(e.target.value) || 0 })}
+          />
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={onClose}>
               キャンセル

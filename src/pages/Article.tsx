@@ -20,6 +20,8 @@ const Article = () => {
   useEffect(() => {
     if (id) {
       fetchArticle(id);
+      // Scroll to top when article changes
+      window.scrollTo(0, 0);
     }
   }, [id]);
 

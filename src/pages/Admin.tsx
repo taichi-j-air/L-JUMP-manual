@@ -67,7 +67,8 @@ const Admin = () => {
   const [newCategory, setNewCategory] = useState({
     name: '',
     slug: '',
-    description: ''
+    description: '',
+    display_order: 0
   });
 
   // Site settings states
@@ -141,6 +142,7 @@ const Admin = () => {
       const { data: categoriesData } = await supabase
         .from('categories')
         .select('*')
+        .order('display_order', { ascending: true })
         .order('name');
 
       // Fetch all news
@@ -329,7 +331,8 @@ const Admin = () => {
       setNewCategory({
         name: '',
         slug: '',
-        description: ''
+        description: '',
+        display_order: 0
       });
 
       fetchAllData();
@@ -388,7 +391,8 @@ const Admin = () => {
         .update({
           name: editingCategory.name,
           slug: editingCategory.slug,
-          description: editingCategory.description
+          description: editingCategory.description,
+          display_order: editingCategory.display_order
         })
         .eq('id', editingCategory.id);
 
@@ -985,6 +989,12 @@ const Admin = () => {
                     value={newCategory.description}
                     onChange={(e) => setNewCategory({ ...newCategory, description: e.target.value })}
                   />
+                  <Input
+                    type="number"
+                    placeholder="表示順序（数字が小さいほど上に表示）"
+                    value={newCategory.display_order}
+                    onChange={(e) => setNewCategory({ ...newCategory, display_order: parseInt(e.target.value) || 0 })}
+                  />
                   <Button onClick={handleCreateCategory} className="bg-ljump-green hover:bg-ljump-green-dark">
                     カテゴリを作成
                   </Button>
@@ -1000,11 +1010,12 @@ const Admin = () => {
                   <div className="space-y-4">
                     {categories.map((category) => (
                       <div key={category.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                        <div>
-                          <h3 className="font-semibold text-foreground">{category.name}</h3>
-                          <p className="text-sm text-muted-foreground">{category.description}</p>
-                          <p className="text-xs text-muted-foreground">スラッグ: {category.slug}</p>
-                        </div>
+                         <div>
+                           <h3 className="font-semibold text-foreground">{category.name}</h3>
+                           <p className="text-sm text-muted-foreground">{category.description}</p>
+                           <p className="text-xs text-muted-foreground">スラッグ: {category.slug}</p>
+                           <p className="text-xs text-muted-foreground">表示順序: {category.display_order || 0}</p>
+                         </div>
                         <div className="flex items-center space-x-2">
                           <Button
                             size="sm"

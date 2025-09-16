@@ -11,6 +11,8 @@ const Index = () => {
   const { articles, categories, news, loading } = useArticles();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("すべて");
+  const [currentPage, setCurrentPage] = useState(1);
+  const articlesPerPage = 9;
 
   // Filter articles based on search and category
   const filteredArticles = useMemo(() => {
@@ -25,23 +27,31 @@ const Index = () => {
     }
     
     // Filter by category
-    if (selectedCategory !== "すべて") {
-      const categoryMap: { [key: string]: string } = {
-        "基本設定": "基本設定",
-        "アカウント管理": "アカウント管理",
-        "データ連携": "データ連携", 
-        "レポート機能": "レポート機能",
-        "トラブルシューティング": "トラブルシューティング"
-      };
-      
+    if (selectedCategory !== "すべて" && selectedCategory !== "全体") {
       filtered = filtered.filter(article => {
         const category = categories.find(cat => cat.id === article.category_id);
-        return category && categoryMap[selectedCategory] === category.name;
+        return category && category.name === selectedCategory;
       });
     }
     
     return filtered;
   }, [articles, categories, searchQuery, selectedCategory]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredArticles.length / articlesPerPage);
+  const startIndex = (currentPage - 1) * articlesPerPage;
+  const paginatedArticles = filteredArticles.slice(startIndex, startIndex + articlesPerPage);
+
+  // Reset current page when filters change
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+  };
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
 
   if (loading) {
     return (
@@ -55,13 +65,13 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header 
         selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
+        onCategoryChange={handleCategoryChange}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
       />
       <SearchBox 
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
       />
       <NewsSection />
       
@@ -87,7 +97,7 @@ const Index = () => {
             {filteredArticles.length > 0 ? (
               <>
                 <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
-                  {filteredArticles.map((article) => (
+                  {paginatedArticles.map((article) => (
                      <ArticleCard 
                        key={article.id} 
                        id={article.id}
@@ -101,12 +111,41 @@ const Index = () => {
                   ))}
                 </div>
                 
-                {/* Dynamic Pagination */}
-                {filteredArticles.length > 6 && (
+                {/* Pagination */}
+                {totalPages > 1 && (
                   <div className="flex justify-center mt-8 md:mt-12">
                     <div className="flex space-x-2">
-                      <button className="px-3 md:px-4 py-2 bg-ljump-green text-primary-foreground rounded-lg font-medium text-sm md:text-base">
-                        1
+                      {/* Previous button */}
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 md:px-4 py-2 rounded-lg font-medium text-sm md:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground hover:bg-muted"
+                      >
+                        前へ
+                      </button>
+                      
+                      {/* Page numbers */}
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-3 md:px-4 py-2 rounded-lg font-medium text-sm md:text-base transition-colors ${
+                            currentPage === page
+                              ? 'bg-ljump-green text-primary-foreground'
+                              : 'text-foreground hover:bg-muted'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      
+                      {/* Next button */}
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="px-3 md:px-4 py-2 rounded-lg font-medium text-sm md:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground hover:bg-muted"
+                      >
+                        次へ
                       </button>
                     </div>
                   </div>
@@ -134,7 +173,7 @@ const Index = () => {
           <div className="lg:block">
         <Sidebar 
           selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
+          onCategoryChange={handleCategoryChange}
         />
           </div>
         </div>

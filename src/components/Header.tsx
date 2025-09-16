@@ -1,17 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Menu, X } from "lucide-react";
-
-const categories = [
-  "すべて",
-  "基本設定",
-  "アカウント管理", 
-  "データ連携",
-  "レポート機能",
-  "トラブルシューティング"
-];
+import { supabase } from "@/integrations/supabase/client";
+import { Category } from "@/hooks/useArticles";
 
 interface HeaderProps {
   selectedCategory?: string;
@@ -22,6 +15,49 @@ interface HeaderProps {
 
 export const Header = ({ selectedCategory = "すべて", onCategoryChange, searchQuery = "", onSearchChange }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<(Category & { count: number })[]>([]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      // Fetch categories with article counts
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('*')
+        .order('display_order', { ascending: true })
+        .order('name');
+
+      if (categoriesData) {
+        const categoriesWithCounts = await Promise.all(
+          categoriesData.map(async (category) => {
+            const { count } = await supabase
+              .from('articles')
+              .select('*', { count: 'exact', head: true })
+              .eq('category_id', category.id)
+              .eq('published', true);
+            
+            return { ...category, count: count || 0 };
+          })
+        );
+
+        // Add "All" category
+        const { count: totalCount } = await supabase
+          .from('articles')
+          .select('*', { count: 'exact', head: true })
+          .eq('published', true);
+
+        setCategories([
+          { id: 'all', name: '全体', slug: 'すべて', count: totalCount || 0, display_order: 0 },
+          ...categoriesWithCounts
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
 
   return (
     <header className="bg-background border-b-4 border-ljump-green sticky top-0 z-50 shadow-sm">
@@ -106,18 +142,18 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
                   </button>
                   {categories.slice(1).map((category) => (
                     <button
-                      key={category}
+                      key={category.id}
                       onClick={() => {
-                        onCategoryChange?.(category);
+                        onCategoryChange?.(category.name);
                         setIsMobileMenuOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 rounded-md transition-colors ${
-                        selectedCategory === category 
+                        selectedCategory === category.name 
                           ? 'bg-ljump-green text-white' 
-                          : 'text-muted-foreground hover:text-ljump-green hover:bg-muted'
+                          : 'text-foreground hover:text-ljump-green hover:bg-muted'
                       }`}
                     >
-                      {category}
+                      {category.name}
                     </button>
                   ))}
                 </div>
