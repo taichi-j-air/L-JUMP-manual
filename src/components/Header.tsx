@@ -73,7 +73,7 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
         </Link>
 
         <Button 
-          className="bg-ljump-green hover:bg-ljump-green-dark text-primary-foreground font-medium px-6 py-2 rounded-lg transition-colors shadow-elegant"
+          className="bg-[#fe4d01] hover:bg-[#d94401] text-primary-foreground font-medium px-6 py-2 rounded-lg transition-colors shadow-elegant"
           onClick={() => window.open('https://ljump.example.com', '_blank')}
         >
           L!JUMPを使ってみる
