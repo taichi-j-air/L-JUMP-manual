@@ -25,12 +25,13 @@ import {
   Palette,
   AlignLeft,
   AlignCenter,
-  AlignRight
+  AlignRight,
+  Minus
 } from 'lucide-react';
 
 export interface Block {
   id: string;
-  type: 'paragraph' | 'heading' | 'image' | 'video' | 'list' | 'quote' | 'code' | 'columns';
+  type: 'paragraph' | 'heading' | 'image' | 'video' | 'list' | 'quote' | 'code' | 'columns' | 'separator';
   content: any;
   order: number;
 }
@@ -142,6 +143,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
       case 'quote': return { text: '', author: '', backgroundColor: '#f3f4f6' };
       case 'code': return { code: '', language: 'javascript' };
       case 'columns': return { columns: [{ content: '' }, { content: '' }] };
+      case 'separator': return {};
       default: return {};
     }
   };
@@ -439,7 +441,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
                 className={`max-w-full h-auto rounded ${
                   block.content.size === 'small' ? 'w-1/4' :
                   block.content.size === 'large' ? 'w-full' : 'w-1/2'
-                }`} 
+                }`}
               />
             )}
             <div className="flex space-x-2">
@@ -467,6 +469,13 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               value={block.content.caption}
               onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
             />
+          </div>
+        );
+
+      case 'separator':
+        return (
+          <div className="py-2">
+            <hr className="border-t-2 border-gray-300" />
           </div>
         );
       
@@ -633,6 +642,11 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
 
   return (
     <div className="space-y-4">
+      {/* Blocks */}
+      <div className="space-y-4">
+        {blocks.map(renderBlock)}
+      </div>
+
       {/* Block Controls */}
       <Card>
         <CardContent className="p-4">
@@ -667,15 +681,14 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
                 <Code2 className="h-4 w-4 mr-1" />
                 コード
               </Button>
+              <Button size="sm" variant="outline" onClick={() => addBlock('separator')}>
+                <Minus className="h-4 w-4 mr-1" />
+                区切り線
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Blocks */}
-      <div className="space-y-4">
-        {blocks.map(renderBlock)}
-      </div>
 
       {blocks.length === 0 && (
         <Card>

@@ -350,6 +350,31 @@ const Admin = () => {
     if (!editingArticle) return;
 
     try {
+      // Check if thumbnail is being removed
+      const originalArticle = articles.find(a => a.id === editingArticle.id);
+      if (originalArticle && originalArticle.thumbnail_url && !editingArticle.thumbnail_url) {
+        const oldUrl = originalArticle.thumbnail_url;
+        // Extract file path from URL. Assumes URL is .../uploads/filename.ext
+        const filePath = oldUrl.substring(oldUrl.lastIndexOf('/uploads/') + '/uploads/'.length);
+        
+        if (filePath) {
+          const { error: storageError } = await supabase.storage
+            .from('uploads')
+            .remove([filePath]);
+          
+          if (storageError) {
+            console.error('Error deleting old thumbnail:', storageError);
+            toast({
+              title: "画像削除エラー",
+              description: "ストレージからのサムネイル削除に失敗しました。",
+              variant: "destructive"
+            });
+            // Optionally, you could stop the update process here
+            // return; 
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('articles')
         .update({
@@ -370,7 +395,7 @@ const Admin = () => {
         description: "記事が更新されました"
       });
 
-      setEditingArticle(null);
+      // setEditingArticle(null); // Keep modal open after save
       fetchAllData();
     } catch (error) {
       console.error('Error updating article:', error);

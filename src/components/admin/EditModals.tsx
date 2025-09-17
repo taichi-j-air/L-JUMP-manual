@@ -110,11 +110,21 @@ export const EditArticleModal: React.FC<EditArticleModalProps> = ({
               className="mb-2"
             />
             {article.thumbnail_url && (
-              <img 
-                src={article.thumbnail_url} 
-                alt="Preview" 
-                className="mt-2 max-w-xs h-auto rounded border"
-              />
+              <div className="mt-2">
+                <img 
+                  src={article.thumbnail_url} 
+                  alt="Preview" 
+                  className="max-w-xs h-auto rounded border"
+                />
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => onChange({ ...article, thumbnail_url: null })}
+                >
+                  画像を削除
+                </Button>
+              </div>
             )}
           </div>
 

@@ -149,6 +149,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
             )}
           </div>
         );
+
+      case 'separator':
+        return <hr key={block.id} className="my-6 border-gray-300" />;
       
       default:
         return null;
