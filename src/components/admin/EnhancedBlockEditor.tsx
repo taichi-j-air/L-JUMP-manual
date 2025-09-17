@@ -26,12 +26,14 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Minus
+  Minus,
+  ChevronRight,
+  AlertTriangle
 } from 'lucide-react';
 
 export interface Block {
   id: string;
-  type: 'paragraph' | 'heading' | 'image' | 'video' | 'list' | 'quote' | 'code' | 'columns' | 'separator';
+  type: 'paragraph' | 'heading' | 'image' | 'video' | 'list' | 'quote' | 'code' | 'columns' | 'separator' | 'note';
   content: any;
   order: number;
 }
@@ -42,7 +44,7 @@ interface EnhancedBlockEditorProps {
 }
 
 export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks, onChange }) => {
-  const [selectedBlockType, setSelectedBlockType] = useState<Block['type']>('paragraph');
+  const [collapsedBlocks, setCollapsedBlocks] = useState<string[]>([]);
 
   const addBlock = (type: Block['type']) => {
     const newBlock: Block = {
@@ -92,6 +94,12 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
     }
   };
 
+  const toggleCollapse = (id: string) => {
+    setCollapsedBlocks(prev =>
+      prev.includes(id) ? prev.filter(bId => bId !== id) : [...prev, id]
+    );
+  };
+
   const uploadFile = async (file: File): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -122,7 +130,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
       case 'paragraph': return { 
         text: '', 
         fontSize: '16px', 
-        color: '#000000', 
+        color: '#454545', 
         backgroundColor: 'transparent',
         bold: false,
         italic: false,
@@ -132,9 +140,15 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
       case 'heading': return { 
         text: '', 
         level: 1, 
+        design_style: 1,
+        color1: '#2589d0',
+        color2: '#f2f2f2',
+        color3: '#333333',
         fontSize: '24px', 
-        color: '#000000', 
-        backgroundColor: 'transparent',
+        color: '#454545', 
+        bold: false,
+        italic: false,
+        underline: false,
         alignment: 'left'
       };
       case 'image': return { url: '', alt: '', caption: '', size: 'medium' };
@@ -144,56 +158,81 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
       case 'code': return { code: '', language: 'javascript' };
       case 'columns': return { columns: [{ content: '' }, { content: '' }] };
       case 'separator': return {};
+      case 'note': return { 
+        text: '', 
+        fontSize: '16px', 
+        color: '#454545', 
+        bold: false,
+        italic: false,
+        underline: false,
+        alignment: 'left'
+      };
       default: return {};
     }
   };
 
+  const renderCollapsedPreview = (block: Block) => {
+    let previewText = block.type;
+    switch (block.type) {
+      case 'heading':
+        previewText = `見出し: ${block.content.text?.substring(0, 30)}...`;
+        break;
+      case 'paragraph':
+        previewText = `段落: ${block.content.text?.substring(0, 30)}...`;
+        break;
+      case 'image':
+        previewText = `画像: ${block.content.alt || block.content.url?.substring(block.content.url.lastIndexOf('/') + 1)}`;
+        break;
+      case 'video':
+        previewText = `動画: ${block.content.url}`;
+        break;
+      case 'list':
+        previewText = `リスト: ${block.content.items[0]?.substring(0, 20)}...`;
+        break;
+      case 'quote':
+        previewText = `引用: ${block.content.text?.substring(0, 30)}...`;
+        break;
+      case 'separator':
+        previewText = '区切り線';
+        break;
+      case 'note':
+        previewText = `注意事項: ${block.content.text?.substring(0, 30)}...`;
+        break;
+    }
+    return <p className="text-sm text-muted-foreground truncate font-mono">{previewText}</p>;
+  };
+
   const renderBlock = (block: Block) => {
+    const isCollapsed = collapsedBlocks.includes(block.id);
+
     return (
-      <Card key={block.id} className="mb-4 group">
-        <CardContent className="p-4">
+      <Card key={block.id} className="mb-4 group bg-white dark:bg-gray-800">
+        <CardContent className={isCollapsed ? "p-0" : "p-2"}>
           <div className="flex items-start space-x-2">
-            <div className="flex flex-col space-y-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0"
-                onClick={() => moveBlock(block.id, 'up')}
-              >
-                <ChevronUp className="h-3 w-3" />
-              </Button>
-              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0"
-                onClick={() => moveBlock(block.id, 'down')}
-              >
-                <ChevronDown className="h-3 w-3" />
-              </Button>
+            <div className={`flex flex-col items-center space-y-1 ${isCollapsed ? 'pt-1' : 'pt-2'}`}>
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => moveBlock(block.id, 'up')}><ChevronUp className="h-4 w-4" /></Button>
+              <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => moveBlock(block.id, 'down')}><ChevronDown className="h-4 w-4" /></Button>
             </div>
             
-            <div className="flex-1">
-              {renderBlockContent(block)}
-            </div>
-            
-            <div className="flex space-x-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0"
-                onClick={() => duplicateBlock(block.id)}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0 text-destructive"
-                onClick={() => deleteBlock(block.id)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+            <div className={`flex-1 ${isCollapsed ? 'py-1' : 'p-2'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0 mr-2" onClick={() => toggleCollapse(block.id)}>
+                    {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                  {isCollapsed && renderCollapsedPreview(block)}
+                </div>
+                <div className="flex space-x-1">
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => duplicateBlock(block.id)}><Copy className="h-4 w-4" /></Button>
+                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive" onClick={() => deleteBlock(block.id)}><Trash2 className="h-4 w-4" /></Button>
+                </div>
+              </div>
+              {!isCollapsed && (
+                <div className="mt-2">
+                  {renderBlockContent(block)}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -202,169 +241,47 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
   };
 
   const renderTextFormatting = (block: Block) => {
-    if (block.type !== 'paragraph' && block.type !== 'heading') return null;
-
-    const handleTextSelection = (textareaRef: HTMLTextAreaElement | null) => {
-      if (!textareaRef) return;
-      
-      const start = textareaRef.selectionStart;
-      const end = textareaRef.selectionEnd;
-      const selectedText = textareaRef.value.substring(start, end);
-      
-      if (selectedText) {
-        return { start, end, selectedText };
-      }
-      return null;
-    };
-
-    const applySelectionFormatting = (formatType: string, value: any, textareaRef: HTMLTextAreaElement | null) => {
-      if (!textareaRef) return;
-      
-      const selection = handleTextSelection(textareaRef);
-      if (!selection) return;
-
-      const { start, end, selectedText } = selection;
-      const beforeText = textareaRef.value.substring(0, start);
-      const afterText = textareaRef.value.substring(end);
-      
-      let formattedText = selectedText;
-      
-      switch (formatType) {
-        case 'backgroundColor':
-          formattedText = `<span style="background-color: ${value}">${selectedText}</span>`;
-          break;
-        case 'color':
-          formattedText = `<span style="color: ${value}">${selectedText}</span>`;
-          break;
-        case 'bold':
-          formattedText = `<strong>${selectedText}</strong>`;
-          break;
-        case 'italic':
-          formattedText = `<em>${selectedText}</em>`;
-          break;
-        case 'underline':
-          formattedText = `<u>${selectedText}</u>`;
-          break;
-      }
-      
-      const newText = beforeText + formattedText + afterText;
-      updateBlock(block.id, { ...block.content, text: newText });
-    };
+    if (block.type !== 'paragraph' && block.type !== 'heading' && block.type !== 'note') return null;
 
     return (
       <div className="flex flex-wrap gap-2 mb-2 p-2 bg-muted rounded-lg">
         <div className="flex items-center space-x-1 border-r pr-2">
-          <Button
-            size="sm"
-            variant={block.content.bold ? "default" : "ghost"}
-            className="h-8 w-8 p-0"
-            onClick={() => updateBlock(block.id, { ...block.content, bold: !block.content.bold })}
-          >
-            <Bold className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant={block.content.italic ? "default" : "ghost"}
-            className="h-8 w-8 p-0"
-            onClick={() => updateBlock(block.id, { ...block.content, italic: !block.content.italic })}
-          >
-            <Italic className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant={block.content.underline ? "default" : "ghost"}
-            className="h-8 w-8 p-0"
-            onClick={() => updateBlock(block.id, { ...block.content, underline: !block.content.underline })}
-          >
-            <Underline className="h-3 w-3" />
-          </Button>
+          <Button size="sm" variant={block.content.bold ? "default" : "ghost"} className="h-8 w-8 p-0" onClick={() => updateBlock(block.id, { ...block.content, bold: !block.content.bold })}><Bold className="h-3 w-3" /></Button>
+          <Button size="sm" variant={block.content.italic ? "default" : "ghost"} className="h-8 w-8 p-0" onClick={() => updateBlock(block.id, { ...block.content, italic: !block.content.italic })}><Italic className="h-3 w-3" /></Button>
+          <Button size="sm" variant={block.content.underline ? "default" : "ghost"} className="h-8 w-8 p-0" onClick={() => updateBlock(block.id, { ...block.content, underline: !block.content.underline })}><Underline className="h-3 w-3" /></Button>
         </div>
         
         <div className="flex items-center space-x-1 border-r pr-2">
-          <Button
-            size="sm"
-            variant={block.content.alignment === 'left' ? "default" : "ghost"}
-            className="h-8 w-8 p-0"
-            onClick={() => updateBlock(block.id, { ...block.content, alignment: 'left' })}
-          >
-            <AlignLeft className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant={block.content.alignment === 'center' ? "default" : "ghost"}
-            className="h-8 w-8 p-0"
-            onClick={() => updateBlock(block.id, { ...block.content, alignment: 'center' })}
-          >
-            <AlignCenter className="h-3 w-3" />
-          </Button>
-          <Button
-            size="sm"
-            variant={block.content.alignment === 'right' ? "default" : "ghost"}
-            className="h-8 w-8 p-0"
-            onClick={() => updateBlock(block.id, { ...block.content, alignment: 'right' })}
-          >
-            <AlignRight className="h-3 w-3" />
-          </Button>
+          <Button size="sm" variant={block.content.alignment === 'left' ? "default" : "ghost"} className="h-8 w-8 p-0" onClick={() => updateBlock(block.id, { ...block.content, alignment: 'left' })}><AlignLeft className="h-3 w-3" /></Button>
+          <Button size="sm" variant={block.content.alignment === 'center' ? "default" : "ghost"} className="h-8 w-8 p-0" onClick={() => updateBlock(block.id, { ...block.content, alignment: 'center' })}><AlignCenter className="h-3 w-3" /></Button>
+          <Button size="sm" variant={block.content.alignment === 'right' ? "default" : "ghost"} className="h-8 w-8 p-0" onClick={() => updateBlock(block.id, { ...block.content, alignment: 'right' })}><AlignRight className="h-3 w-3" /></Button>
         </div>
 
-        <Input
-          type="number"
-          placeholder="サイズ"
-          value={parseInt(block.content.fontSize) || 16}
-          onChange={(e) => updateBlock(block.id, { ...block.content, fontSize: `${e.target.value}px` })}
-          className="w-20 h-8"
-          min="8"
-          max="72"
-        />
+        <Input type="number" placeholder="サイズ" value={parseInt(block.content.fontSize) || 16} onChange={(e) => updateBlock(block.id, { ...block.content, fontSize: `${e.target.value}px` })} className="w-20 h-8" min="8" max="72" />
         
         <div className="flex items-center space-x-1">
           <Palette className="h-3 w-3" />
-          <input
-            type="color"
-            value={block.content.color || '#000000'}
-            onChange={(e) => updateBlock(block.id, { ...block.content, color: e.target.value })}
-            className="w-8 h-8 rounded border"
-          />
+          <input type="color" value={block.content.color || '#000000'} onChange={(e) => updateBlock(block.id, { ...block.content, color: e.target.value })} className="w-8 h-8 rounded border" />
         </div>
-        
-        <div className="flex items-center space-x-1">
-          <span className="text-xs">背景:</span>
-          <input
-            type="color"
-            value={block.content.backgroundColor === 'transparent' ? '#ffffff' : block.content.backgroundColor || '#ffffff'}
-            onChange={(e) => updateBlock(block.id, { ...block.content, backgroundColor: e.target.value })}
-            className="w-8 h-8 rounded border"
-          />
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 px-2 text-xs"
-            onClick={() => updateBlock(block.id, { ...block.content, backgroundColor: 'transparent' })}
-          >
-            透明
-          </Button>
-        </div>
-        
-        <div className="flex items-center space-x-1 border-l pl-2">
-          <span className="text-xs">選択背景:</span>
-          <input
-            type="color"
-            onChange={(e) => {
-              const textarea = document.querySelector(`textarea[data-block-id="${block.id}"]`) as HTMLTextAreaElement;
-              applySelectionFormatting('backgroundColor', e.target.value, textarea);
-            }}
-            className="w-8 h-8 rounded border"
-          />
-        </div>
+
+        {block.type === 'heading' && (
+          <div className="flex items-center space-x-2 border-l pl-2">
+            <span className="text-xs font-medium">色1:</span>
+            <input type="color" value={block.content.color1 || ''} onChange={(e) => updateBlock(block.id, { ...block.content, color1: e.target.value })} className="w-7 h-7 rounded border" />
+            <span className="text-xs font-medium">色2:</span>
+            <input type="color" value={block.content.color2 || ''} onChange={(e) => updateBlock(block.id, { ...block.content, color2: e.target.value })} className="w-7 h-7 rounded border" />
+            <span className="text-xs font-medium">色3:</span>
+            <input type="color" value={block.content.color3 || ''} onChange={(e) => updateBlock(block.id, { ...block.content, color3: e.target.value })} className="w-7 h-7 rounded border" />
+          </div>
+        )}
       </div>
     );
   };
 
   const renderBlockContent = (block: Block) => {
-    const textStyle = (block.type === 'paragraph' || block.type === 'heading') ? {
-      fontSize: block.content.fontSize || '16px',
-      color: block.content.color || '#000000',
-      backgroundColor: block.content.backgroundColor === 'transparent' ? 'transparent' : block.content.backgroundColor || 'transparent',
+    const textStyle = (block.type === 'paragraph' || block.type === 'heading' || block.type === 'note') ? {
+      fontSize: block.content.fontSize,
+      color: block.content.color,
       fontWeight: block.content.bold ? 'bold' : 'normal',
       fontStyle: block.content.italic ? 'italic' : 'normal',
       textDecoration: block.content.underline ? 'underline' : 'none',
@@ -388,18 +305,22 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
         );
       
       case 'heading':
+        const headingStyle = {
+          '--heading-color-1': block.content.color1,
+          '--heading-color-2': block.content.color2,
+          '--heading-color-3': block.content.color3,
+        } as React.CSSProperties;
+
         return (
           <div className="space-y-2">
             {renderTextFormatting(block)}
             <div className="flex space-x-2">
               <Select
                 value={block.content.level.toString()}
-                onValueChange={(value) => 
-                  updateBlock(block.id, { ...block.content, level: parseInt(value) })
-                }
+                onValueChange={(value) => updateBlock(block.id, { ...block.content, level: parseInt(value) })}
               >
                 <SelectTrigger className="w-24">
-                  <SelectValue />
+                  <SelectValue placeholder="H Level" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="1">H1</SelectItem>
@@ -408,11 +329,31 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
                   <SelectItem value="4">H4</SelectItem>
                 </SelectContent>
               </Select>
-              <Input
+              <Select
+                value={block.content.design_style?.toString() || '1'}
+                onValueChange={(value) => updateBlock(block.id, { ...block.content, design_style: parseInt(value) })}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="デザインを選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">デザイン 1</SelectItem>
+                  <SelectItem value="2">デザイン 2</SelectItem>
+                  <SelectItem value="3">デザイン 3</SelectItem>
+                  <SelectItem value="4">デザイン 4</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div
+              className={`heading-style-${block.content.design_style || 1}`}
+              style={headingStyle}
+            >
+              <input
+                type="text"
                 placeholder="見出しテキスト"
                 value={block.content.text}
                 onChange={(e) => updateBlock(block.id, { ...block.content, text: e.target.value })}
-                className="flex-1"
+                className="w-full bg-transparent border-none focus:ring-0 p-0 m-0"
                 style={textStyle}
               />
             </div>
@@ -478,7 +419,23 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
             <hr className="border-t-2 border-gray-300" />
           </div>
         );
-      
+
+      case 'note':
+        return (
+          <div>
+            {renderTextFormatting(block)}
+            <div className="note-box">
+              <Textarea
+                placeholder="注意事項を入力..."
+                value={block.content.text}
+                onChange={(e) => updateBlock(block.id, { ...block.content, text: e.target.value })}
+                className="w-full bg-transparent focus:ring-0 border-0 p-0"
+                style={textStyle}
+              />
+            </div>
+          </div>
+        );
+
       case 'list':
         return (
           <div className="space-y-2">
@@ -489,218 +446,222 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               }
             >
               <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="bullet">箇条書き</SelectItem>
-                <SelectItem value="numbered">番号付き</SelectItem>
-              </SelectContent>
-            </Select>
-            {block.content.items.map((item: string, index: number) => (
-              <div key={index} className="flex space-x-2">
-                <Input
-                  value={item}
-                  onChange={(e) => {
-                    const newItems = [...block.content.items];
-                    newItems[index] = e.target.value;
-                    updateBlock(block.id, { ...block.content, items: newItems });
-                  }}
-                  placeholder={`項目 ${index + 1}`}
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bullet">箇条書き</SelectItem>
+                  <SelectItem value="numbered">番号付き</SelectItem>
+                </SelectContent>
+              </Select>
+              {block.content.items.map((item: string, index: number) => (
+                <div key={index} className="flex space-x-2">
+                  <Input
+                    value={item}
+                    onChange={(e) => {
+                      const newItems = [...block.content.items];
+                      newItems[index] = e.target.value;
+                      updateBlock(block.id, { ...block.content, items: newItems });
+                    }}
+                    placeholder={`項目 ${index + 1}`}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const newItems = block.content.items.filter((_: any, i: number) => i !== index);
+                      updateBlock(block.id, { ...block.content, items: newItems });
+                    }}
+                  >
+                    削除
+                  </Button>
+                </div>
+              ))}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const newItems = [...block.content.items, ''];
+                  updateBlock(block.id, { ...block.content, items: newItems });
+                }}
+              >
+                項目を追加
+              </Button>
+            </div>
+          );
+        
+        case 'quote':
+          return (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 mb-2">
+                <span className="text-sm">背景色:</span>
+                <input
+                  type="color"
+                  value={block.content.backgroundColor || '#f3f4f6'}
+                  onChange={(e) => updateBlock(block.id, { ...block.content, backgroundColor: e.target.value })}
+                  className="w-8 h-8 rounded border"
                 />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const newItems = block.content.items.filter((_: any, i: number) => i !== index);
-                    updateBlock(block.id, { ...block.content, items: newItems });
-                  }}
-                >
-                  削除
-                </Button>
               </div>
-            ))}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const newItems = [...block.content.items, ''];
-                updateBlock(block.id, { ...block.content, items: newItems });
-              }}
-            >
-              項目を追加
-            </Button>
-          </div>
-        );
-      
-      case 'quote':
-        return (
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-sm">背景色:</span>
-              <input
-                type="color"
-                value={block.content.backgroundColor || '#f3f4f6'}
-                onChange={(e) => updateBlock(block.id, { ...block.content, backgroundColor: e.target.value })}
-                className="w-8 h-8 rounded border"
+              <Textarea
+                placeholder="引用テキスト"
+                value={block.content.text}
+                onChange={(e) => updateBlock(block.id, { ...block.content, text: e.target.value })}
+                rows={3}
+                style={{ backgroundColor: block.content.backgroundColor || '#f3f4f6' }}
+              />
+              <Input
+                placeholder="引用元（オプション）"
+                value={block.content.author}
+                onChange={(e) => updateBlock(block.id, { ...block.content, author: e.target.value })}
               />
             </div>
-            <Textarea
-              placeholder="引用テキスト"
-              value={block.content.text}
-              onChange={(e) => updateBlock(block.id, { ...block.content, text: e.target.value })}
-              rows={3}
-              style={{ backgroundColor: block.content.backgroundColor || '#f3f4f6' }}
-            />
-            <Input
-              placeholder="引用元（オプション）"
-              value={block.content.author}
-              onChange={(e) => updateBlock(block.id, { ...block.content, author: e.target.value })}
-            />
-          </div>
-        );
-      
-      case 'code':
-        return (
-          <div className="space-y-2">
-            <Select
-              value={block.content.language}
-              onValueChange={(value) => 
-                updateBlock(block.id, { ...block.content, language: value })
-              }
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="javascript">JavaScript</SelectItem>
-                <SelectItem value="typescript">TypeScript</SelectItem>
-                <SelectItem value="html">HTML</SelectItem>
-                <SelectItem value="css">CSS</SelectItem>
-                <SelectItem value="python">Python</SelectItem>
-                <SelectItem value="sql">SQL</SelectItem>
-              </SelectContent>
-            </Select>
-            <Textarea
-              placeholder="コードを入力..."
-              value={block.content.code}
-              onChange={(e) => updateBlock(block.id, { ...block.content, code: e.target.value })}
-              rows={8}
-              className="font-mono"
-            />
-          </div>
-        );
-      
-      case 'video':
-        const convertYouTubeUrl = (url: string) => {
-          // Convert YouTube URLs to embed format
-          const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
-          const match = url.match(youtubeRegex);
-          if (match) {
-            return `https://www.youtube.com/embed/${match[1]}`;
-          }
-          return url;
-        };
+          );
+        
+        case 'code':
+          return (
+            <div className="space-y-2">
+              <Select
+                value={block.content.language}
+                onValueChange={(value) => 
+                  updateBlock(block.id, { ...block.content, language: value })
+                }
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="javascript">JavaScript</SelectItem>
+                  <SelectItem value="typescript">TypeScript</SelectItem>
+                  <SelectItem value="html">HTML</SelectItem>
+                  <SelectItem value="css">CSS</SelectItem>
+                  <SelectItem value="python">Python</SelectItem>
+                  <SelectItem value="sql">SQL</SelectItem>
+                </SelectContent>
+              </Select>
+              <Textarea
+                placeholder="コードを入力..."
+                value={block.content.code}
+                onChange={(e) => updateBlock(block.id, { ...block.content, code: e.target.value })}
+                rows={8}
+                className="font-mono"
+              />
+            </div>
+          );
+        
+        case 'video':
+          const convertYouTubeUrl = (url: string) => {
+            // Convert YouTube URLs to embed format
+            const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+            const match = url.match(youtubeRegex);
+            if (match) {
+              return `https://www.youtube.com/embed/${match[1]}`;
+            }
+            return url;
+          };
 
-        return (
-          <div className="space-y-2">
-            <Input
-              placeholder="動画URL (YouTube対応)"
-              value={block.content.url}
-              onChange={(e) => updateBlock(block.id, { ...block.content, url: e.target.value })}
-            />
-            <div className="flex items-center space-x-2">
-              <span className="text-sm">枠線色:</span>
-              <input
-                type="color"
-                value={block.content.borderColor || '#000000'}
-                onChange={(e) => updateBlock(block.id, { ...block.content, borderColor: e.target.value })}
-                className="w-8 h-8 rounded border"
+          return (
+            <div className="space-y-2">
+              <Input
+                placeholder="動画URL (YouTube対応)"
+                value={block.content.url}
+                onChange={(e) => updateBlock(block.id, { ...block.content, url: e.target.value })}
               />
-            </div>
-            {block.content.url && (
-              <div className="aspect-video">
-                <iframe
-                  src={convertYouTubeUrl(block.content.url)}
-                  className="w-full h-full rounded-lg"
-                  style={{ border: `3px solid ${block.content.borderColor || '#000000'}` }}
-                  allowFullScreen
+              <div className="flex items-center space-x-2">
+                <span className="text-sm">枠線色:</span>
+                <input
+                  type="color"
+                  value={block.content.borderColor || '#000000'}
+                  onChange={(e) => updateBlock(block.id, { ...block.content, borderColor: e.target.value })}
+                  className="w-8 h-8 rounded border"
                 />
               </div>
-            )}
-            <Input
-              placeholder="キャプション"
-              value={block.content.caption}
-              onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
-            />
-          </div>
-        );
+              {block.content.url && (
+                <div className="aspect-video">
+                  <iframe
+                    src={convertYouTubeUrl(block.content.url)}
+                    className="w-full h-full rounded-lg"
+                    style={{ border: `3px solid ${block.content.borderColor || '#000000'}` }}
+                    allowFullScreen
+                  />
+                </div>
+              )}
+              <Input
+                placeholder="キャプション"
+                value={block.content.caption}
+                onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
+              />
+            </div>
+          );
       
       default:
         return <div>Unknown block type</div>;
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Blocks */}
+    return (
       <div className="space-y-4">
-        {blocks.map(renderBlock)}
-      </div>
+        {/* Blocks */}
+        <div className="space-y-4">
+          {blocks.map(renderBlock)}
+        </div>
 
-      {/* Block Controls */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-2 mb-4">
-            <span className="text-sm font-medium">ブロックを追加:</span>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="outline" onClick={() => addBlock('paragraph')}>
-                <Type className="h-4 w-4 mr-1" />
-                段落
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addBlock('heading')}>
-                <Type className="h-4 w-4 mr-1" />
-                見出し
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addBlock('image')}>
-                <Image className="h-4 w-4 mr-1" />
-                画像
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addBlock('video')}>
-                <Video className="h-4 w-4 mr-1" />
-                動画
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addBlock('list')}>
-                <List className="h-4 w-4 mr-1" />
-                リスト
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addBlock('quote')}>
-                <Quote className="h-4 w-4 mr-1" />
-                引用
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addBlock('code')}>
-                <Code2 className="h-4 w-4 mr-1" />
-                コード
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => addBlock('separator')}>
-                <Minus className="h-4 w-4 mr-1" />
-                区切り線
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {blocks.length === 0 && (
+        {/* Block Controls */}
         <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground mb-4">ブロックを追加して記事を作成しましょう</p>
-            <Button onClick={() => addBlock('paragraph')} className="bg-ljump-green hover:bg-ljump-green-dark">
-              <Plus className="h-4 w-4 mr-2" />
-              最初のブロックを追加
-            </Button>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <span className="text-sm font-medium">ブロックを追加:</span>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => addBlock('paragraph')}>
+                  <Type className="h-4 w-4 mr-1" />
+                  段落
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('heading')}>
+                  <Type className="h-4 w-4 mr-1" />
+                  見出し
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('image')}>
+                  <Image className="h-4 w-4 mr-1" />
+                  画像
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('video')}>
+                  <Video className="h-4 w-4 mr-1" />
+                  動画
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('list')}>
+                  <List className="h-4 w-4 mr-1" />
+                  リスト
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('quote')}>
+                  <Quote className="h-4 w-4 mr-1" />
+                  引用
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('code')}>
+                  <Code2 className="h-4 w-4 mr-1" />
+                  コード
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('separator')}>
+                  <Minus className="h-4 w-4 mr-1" />
+                  区切り線
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('note')}>
+                  <AlertTriangle className="h-4 w-4 mr-1" />
+                  注意事項
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
-    </div>
-  );
-};
+
+        {blocks.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground mb-4">ブロックを追加して記事を作成しましょう</p>
+              <Button onClick={() => addBlock('paragraph')} className="bg-ljump-green hover:bg-ljump-green-dark">
+                <Plus className="h-4 w-4 mr-2" />
+                最初のブロックを追加
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  };

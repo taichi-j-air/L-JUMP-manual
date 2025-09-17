@@ -27,10 +27,9 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
   };
 
   const renderBlock = (block: Block) => {
-    const textStyle = (block.type === 'paragraph' || block.type === 'heading') ? {
-      fontSize: block.content.fontSize || '16px',
-      color: block.content.color || '#000000',
-      backgroundColor: block.content.backgroundColor === 'transparent' ? 'transparent' : block.content.backgroundColor || 'transparent',
+    const textStyle = (block.type === 'paragraph' || block.type === 'heading' || block.type === 'note') ? {
+      fontSize: block.content.fontSize,
+      color: block.content.color,
       fontWeight: block.content.bold ? 'bold' : 'normal',
       fontStyle: block.content.italic ? 'italic' : 'normal',
       textDecoration: block.content.underline ? 'underline' : 'none',
@@ -51,19 +50,22 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
       
       case 'heading':
         const HeadingTag = `h${block.content.level}` as keyof JSX.IntrinsicElements;
+        const headingStyle = {
+          '--heading-color-1': block.content.color1,
+          '--heading-color-2': block.content.color2,
+          '--heading-color-3': block.content.color3,
+        } as React.CSSProperties;
+
         return (
-          <HeadingTag 
-            key={block.id} 
-            style={textStyle}
-            className={`mb-4 font-semibold ${
-              block.content.level === 1 ? 'text-3xl' :
-              block.content.level === 2 ? 'text-2xl' :
-              block.content.level === 3 ? 'text-xl' :
-              'text-lg'
-            }`}
+          <div
+            key={block.id}
+            className={`heading-style-${block.content.design_style || 1}`}
+            style={headingStyle}
           >
-            {convertURLsToLinks(block.content.text)}
-          </HeadingTag>
+            <HeadingTag style={textStyle} className="m-0 p-0 bg-transparent border-none">
+              {convertURLsToLinks(block.content.text)}
+            </HeadingTag>
+          </div>
         );
       
       case 'image':
@@ -152,6 +154,15 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
 
       case 'separator':
         return <hr key={block.id} className="my-6 border-gray-300" />;
+
+      case 'note':
+        return (
+          <div key={block.id} className="note-box">
+            <p style={textStyle} className="whitespace-pre-wrap">
+              {convertURLsToLinks(block.content.text)}
+            </p>
+          </div>
+        );
       
       default:
         return null;
