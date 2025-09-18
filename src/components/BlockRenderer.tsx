@@ -164,6 +164,54 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
           </div>
         );
       
+      case 'dialogue':
+        return (
+          <div key={block.id} className="space-y-2 my-4">
+            {block.content.items.map((item: any, index: number) => {
+              const isRight = item.alignment === 'right';
+              const iconSrc = isRight ? block.content.rightIcon : block.content.leftIcon;
+              const name = isRight ? block.content.rightName : block.content.leftName;
+
+              return (
+                <div key={index} className={`flex items-start gap-3 ${isRight ? 'flex-row-reverse' : ''}`}>
+                  {/* アイコンと名前 */}
+                  <div className="flex-shrink-0 text-center w-12 md:w-[70px]">
+                    <img
+                      src={iconSrc || '/placeholder.svg'}
+                      alt="icon"
+                      className="w-12 h-12 md:w-[70px] md:h-[70px] rounded-full object-cover border-2 border-gray-200"
+                    />
+                    {name && (
+                      <span className="text-[10px] text-muted-foreground mt-0 break-all whitespace-pre-wrap" style={{ lineHeight: 0.8 }}>
+                        {name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 吹き出し */}
+                  <div className="relative w-[240px] md:w-[300px]">
+                    <div
+                      className="p-3 rounded-lg"
+                      style={{ backgroundColor: block.content.bubbleBackgroundColor || '#f2f2f2' }}
+                    >
+                      <p className="m-0 text-sm whitespace-pre-wrap leading-relaxed">{convertURLsToLinks(item.text)}</p>
+                    </div>
+                    {/* 吹き出しのしっぽ */}
+                    <div
+                      className="absolute top-4 w-3 h-3"
+                      style={{
+                        backgroundColor: block.content.bubbleBackgroundColor || '#f2f2f2',
+                        transform: 'rotate(45deg)',
+                        ...(isRight ? { right: '-6px' } : { left: '-6px' })
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      
       default:
         return null;
     }

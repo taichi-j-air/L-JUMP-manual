@@ -28,12 +28,13 @@ import {
   AlignRight,
   Minus,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare
 } from 'lucide-react';
 
 export interface Block {
   id: string;
-  type: 'paragraph' | 'heading' | 'image' | 'video' | 'list' | 'quote' | 'code' | 'columns' | 'separator' | 'note';
+  type: 'paragraph' | 'heading' | 'image' | 'video' | 'list' | 'quote' | 'code' | 'columns' | 'separator' | 'note' | 'dialogue';
   content: any;
   order: number;
 }
@@ -158,7 +159,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
       case 'code': return { code: '', language: 'javascript' };
       case 'columns': return { columns: [{ content: '' }, { content: '' }] };
       case 'separator': return {};
-      case 'note': return { 
+      case 'note': return {
         text: '', 
         fontSize: '16px', 
         color: '#454545', 
@@ -166,6 +167,16 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
         italic: false,
         underline: false,
         alignment: 'left'
+      };
+      case 'dialogue': return {
+        leftIcon: '/placeholder.svg',
+        rightIcon: '/placeholder.svg',
+        leftName: '左の名前',
+        rightName: '右の名前',
+        bubbleBackgroundColor: '#f2f2f2',
+        items: [
+          { alignment: 'left', text: 'これは会話風の吹き出しです。' }
+        ]
       };
       default: return {};
     }
@@ -592,6 +603,163 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
             </div>
           );
       
+      case 'dialogue':
+        return (
+          <div className="space-y-4 p-3 bg-gray-50/50 dark:bg-gray-800/20 rounded-lg border">
+            {/* --- 設定エリア --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-4">
+              {/* 左キャラクター設定 */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">左キャラクター</label>
+                <FileUpload
+                  onFileSelect={async (files) => {
+                    const file = files[0];
+                    if (file) {
+                      const url = await uploadFile(file);
+                      if (url) {
+                        updateBlock(block.id, { ...block.content, leftIcon: url });
+                      }
+                    }
+                  }}
+                  accept="image/*"
+                  value={block.content.leftIcon}
+                  onClear={() => updateBlock(block.id, { ...block.content, leftIcon: '' })}
+                />
+                <Textarea
+                  placeholder="名前 (改行可)"
+                  value={block.content.leftName || ''}
+                  onChange={(e) => updateBlock(block.id, { ...block.content, leftName: e.target.value })}
+                  className="mt-2 text-xs"
+                  rows={2}
+                />
+              </div>
+              {/* 右キャラクター設定 */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">右キャラクター</label>
+                <FileUpload
+                  onFileSelect={async (files) => {
+                    const file = files[0];
+                    if (file) {
+                      const url = await uploadFile(file);
+                      if (url) {
+                        updateBlock(block.id, { ...block.content, rightIcon: url });
+                      }
+                    }
+                  }}
+                  accept="image/*"
+                  value={block.content.rightIcon}
+                  onClear={() => updateBlock(block.id, { ...block.content, rightIcon: '' })}
+                />
+                <Textarea
+                  placeholder="名前 (改行可)"
+                  value={block.content.rightName || ''}
+                  onChange={(e) => updateBlock(block.id, { ...block.content, rightName: e.target.value })}
+                  className="mt-2 text-xs"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">吹き出し背景色:</label>
+              <input
+                type="color"
+                value={block.content.bubbleBackgroundColor || '#f2f2f2'}
+                onChange={(e) => updateBlock(block.id, { ...block.content, bubbleBackgroundColor: e.target.value })}
+                className="w-8 h-8 rounded border"
+              />
+            </div>
+
+            {/* --- 会話アイテムエリア --- */}
+            <div className="space-y-3 pt-2">
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">会話</label>
+              {block.content.items.map((item: any, index: number) => (
+                <div key={index} className="flex items-start gap-2 p-2 rounded-md border bg-white dark:bg-gray-900/50">
+                  <img 
+                    src={item.alignment === 'left' ? block.content.leftIcon || '/placeholder.svg' : block.content.rightIcon || '/placeholder.svg'} 
+                    alt="icon preview"
+                    className="w-10 h-10 rounded-full object-cover mt-1"
+                  />
+                  <div className="flex-1 space-y-2">
+                    <Textarea 
+                      placeholder="テキスト..."
+                      value={item.text}
+                      onChange={(e) => {
+                        const newItems = [...block.content.items];
+                        newItems[index] = { ...item, text: e.target.value };
+                        updateBlock(block.id, { ...block.content, items: newItems });
+                      }}
+                      rows={3}
+                      className="w-full text-sm"
+                    />
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-1 rounded-md p-0.5">
+                        <Button
+                          size="sm"
+                          variant={item.alignment === 'left' ? 'secondary' : 'ghost'}
+                          className="h-7"
+                          onClick={() => {
+                            const newItems = [...block.content.items];
+                            newItems[index] = { ...item, alignment: 'left' };
+                            updateBlock(block.id, { ...block.content, items: newItems });
+                          }}
+                        >
+                          左
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={item.alignment === 'right' ? 'secondary' : 'ghost'}
+                          className="h-7"
+                          onClick={() => {
+                            const newItems = [...block.content.items];
+                            newItems[index] = { ...item, alignment: 'right' };
+                            updateBlock(block.id, { ...block.content, items: newItems });
+                          }}
+                        >
+                          右
+                        </Button>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive h-7"
+                        onClick={() => {
+                          const newItems = block.content.items.filter((_: any, i: number) => i !== index);
+                          updateBlock(block.id, { ...block.content, items: newItems });
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const newItems = [...block.content.items, { alignment: 'left', text: '' }];
+                    updateBlock(block.id, { ...block.content, items: newItems });
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> 左向きを追加
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const newItems = [...block.content.items, { alignment: 'right', text: '' }];
+                    updateBlock(block.id, { ...block.content, items: newItems });
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> 右向きを追加
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      
       default:
         return <div>Unknown block type</div>;
     }
@@ -645,6 +813,10 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
                 <Button size="sm" variant="outline" onClick={() => addBlock('note')}>
                   <AlertTriangle className="h-4 w-4 mr-1" />
                   注意事項
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addBlock('dialogue')}>
+                  <MessageSquare className="h-4 w-4 mr-1" />
+                  対話
                 </Button>
               </div>
             </div>
