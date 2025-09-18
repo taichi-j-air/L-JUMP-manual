@@ -4,6 +4,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { FileUpload } from '@/components/ui/file-upload';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -29,7 +31,8 @@ import {
   Minus,
   ChevronRight,
   AlertTriangle,
-  MessageSquare
+  MessageSquare,
+  Link
 } from 'lucide-react';
 
 export interface Block {
@@ -152,8 +155,23 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
         underline: false,
         alignment: 'left'
       };
-      case 'image': return { url: '', alt: '', caption: '', size: 'medium' };
-      case 'video': return { url: '', caption: '', borderColor: '#000000' };
+      case 'image': return { 
+        url: '', 
+        alt: '', 
+        caption: '', 
+        size: 'medium',
+        linkUrl: '', 
+        alignment: 'center',
+        rounded: true,
+        hoverEffect: false
+      };
+      case 'video': return { 
+        url: '', 
+        caption: '', 
+        borderColor: '#000000',
+        rounded: true,
+        size: 'medium'
+      };
       case 'list': return { items: [''], type: 'bullet' };
       case 'quote': return { text: '', author: '', backgroundColor: '#f3f4f6' };
       case 'code': return { code: '', language: 'javascript' };
@@ -290,6 +308,13 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
   };
 
   const renderBlockContent = (block: Block) => {
+    const sizeClasses: { [key: string]: string } = {
+      small: 'w-1/4',
+      medium: 'w-1/2',
+      large: 'w-3/4',
+      full: 'w-full'
+    };
+
     const textStyle = (block.type === 'paragraph' || block.type === 'heading' || block.type === 'note') ? {
       fontSize: block.content.fontSize,
       color: block.content.color,
@@ -373,7 +398,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
       
       case 'image':
         return (
-          <div className="space-y-2">
+          <div className="space-y-4">
             <FileUpload
               onFileSelect={async (files) => {
                 const file = files[0];
@@ -387,40 +412,116 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
               accept="image/*"
             />
             {block.content.url && (
-              <img 
-                src={block.content.url} 
-                alt={block.content.alt} 
-                className={`max-w-full h-auto rounded ${
-                  block.content.size === 'small' ? 'w-1/4' :
-                  block.content.size === 'large' ? 'w-full' : 'w-1/2'
-                }`}
-              />
+              <div className="bg-gray-100 dark:bg-gray-800/50 p-4 rounded-md flex justify-center">
+                <img 
+                  src={block.content.url} 
+                  alt={block.content.alt || 'preview'} 
+                  className={`max-w-full h-auto rounded shadow-md ${sizeClasses[block.content.size] || 'w-1/2'}`}
+                />
+              </div>
             )}
-            <div className="flex space-x-2">
-              <Select
-                value={block.content.size || 'medium'}
-                onValueChange={(value) => updateBlock(block.id, { ...block.content, size: value })}
-              >
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="サイズ" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="small">小</SelectItem>
-                  <SelectItem value="medium">中</SelectItem>
-                  <SelectItem value="large">大</SelectItem>
-                </SelectContent>
-              </Select>
+            
+            <div className="space-y-4 pt-2 border-t">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {/* 配置設定 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">配置</label>
+                  <div className="flex items-center gap-1 rounded-md bg-muted p-1 w-fit">
+                    <Button
+                      size="sm"
+                      variant={block.content.alignment === 'left' ? 'default' : 'ghost'}
+                      onClick={() => updateBlock(block.id, { ...block.content, alignment: 'left' })}
+                      className="h-8"
+                    >
+                      <AlignLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={block.content.alignment === 'center' || !block.content.alignment ? 'default' : 'ghost'}
+                      onClick={() => updateBlock(block.id, { ...block.content, alignment: 'center' })}
+                      className="h-8"
+                    >
+                      <AlignCenter className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={block.content.alignment === 'right' ? 'default' : 'ghost'}
+                      onClick={() => updateBlock(block.id, { ...block.content, alignment: 'right' })}
+                      className="h-8"
+                    >
+                      <AlignRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* サイズ設定 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">サイズ</label>
+                  <Select
+                    value={block.content.size || 'medium'}
+                    onValueChange={(value) => updateBlock(block.id, { ...block.content, size: value })}
+                  >
+                    <SelectTrigger className="w-full md:w-40">
+                      <SelectValue placeholder="サイズ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">25%</SelectItem>
+                      <SelectItem value="medium">50%</SelectItem>
+                      <SelectItem value="large">75%</SelectItem>
+                      <SelectItem value="full">100%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* オプション設定 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">オプション</label>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`rounded-image-${block.id}`}
+                      checked={block.content.rounded !== false}
+                      onCheckedChange={(checked) => updateBlock(block.id, { ...block.content, rounded: checked })}
+                    />
+                    <Label htmlFor={`rounded-image-${block.id}`} className="text-sm font-normal">角丸</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id={`hover-effect-${block.id}`}
+                      checked={!!block.content.hoverEffect}
+                      onCheckedChange={(checked) => updateBlock(block.id, { ...block.content, hoverEffect: checked })}
+                    />
+                    <Label htmlFor={`hover-effect-${block.id}`} className="text-sm font-normal">ホバー</Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* リンクURL入力 */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">リンクURL (任意)</label>
+                <div className="flex items-center gap-2">
+                  <Link className="h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="url"
+                    placeholder="https://example.com"
+                    value={block.content.linkUrl || ''}
+                    onChange={(e) => updateBlock(block.id, { ...block.content, linkUrl: e.target.value })}
+                  />
+                </div>
+              </div>
             </div>
-            <Input
-              placeholder="代替テキスト"
-              value={block.content.alt}
-              onChange={(e) => updateBlock(block.id, { ...block.content, alt: e.target.value })}
-            />
-            <Input
-              placeholder="キャプション"
-              value={block.content.caption}
-              onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
-            />
+
+            <div className="space-y-4">
+              <Input
+                placeholder="代替テキスト (画像の簡単な説明)"
+                value={block.content.alt || ''}
+                onChange={(e) => updateBlock(block.id, { ...block.content, alt: e.target.value })}
+              />
+              <Input
+                placeholder="キャプション (画像の下に表示されるテキスト)"
+                value={block.content.caption || ''}
+                onChange={(e) => updateBlock(block.id, { ...block.content, caption: e.target.value })}
+              />
+            </div>
           </div>
         );
 
@@ -576,14 +677,41 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
                 value={block.content.url}
                 onChange={(e) => updateBlock(block.id, { ...block.content, url: e.target.value })}
               />
-              <div className="flex items-center space-x-2">
-                <span className="text-sm">枠線色:</span>
-                <input
-                  type="color"
-                  value={block.content.borderColor || '#000000'}
-                  onChange={(e) => updateBlock(block.id, { ...block.content, borderColor: e.target.value })}
-                  className="w-8 h-8 rounded border"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm">枠線色:</span>
+                  <input
+                    type="color"
+                    value={block.content.borderColor || '#000000'}
+                    onChange={(e) => updateBlock(block.id, { ...block.content, borderColor: e.target.value })}
+                    className="w-8 h-8 rounded border"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id={`rounded-video-${block.id}`}
+                    checked={block.content.rounded !== false}
+                    onCheckedChange={(checked) => updateBlock(block.id, { ...block.content, rounded: checked })}
+                  />
+                  <Label htmlFor={`rounded-video-${block.id}`} className="text-sm">角丸</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">サイズ</Label>
+                  <Select
+                    value={block.content.size || 'medium'}
+                    onValueChange={(value) => updateBlock(block.id, { ...block.content, size: value })}
+                  >
+                    <SelectTrigger className="w-full md:w-40">
+                      <SelectValue placeholder="サイズ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">25%</SelectItem>
+                      <SelectItem value="medium">50%</SelectItem>
+                      <SelectItem value="large">75%</SelectItem>
+                      <SelectItem value="full">100%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               {block.content.url && (
                 <div className="aspect-video">

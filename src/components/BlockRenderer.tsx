@@ -27,6 +27,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
   };
 
   const renderBlock = (block: Block) => {
+    const alignmentClasses: { [key: string]: string } = {
+      left: 'text-left',
+      center: 'text-center',
+      right: 'text-right'
+    };
+  
+    const sizeClasses: { [key: string]: string } = {
+      small: 'w-1/4',
+      medium: 'w-1/2',
+      large: 'w-3/4',
+      full: 'w-full'
+    };
     const textStyle = (block.type === 'paragraph' || block.type === 'heading' || block.type === 'note') ? {
       fontSize: block.content.fontSize,
       color: block.content.color,
@@ -69,18 +81,29 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
         );
       
       case 'image':
+        const hoverClass = block.content.hoverEffect !== false ? 'hover:opacity-70 transition-opacity' : '';
+
+        const imageElement = (
+          <img 
+            src={block.content.url} 
+            alt={block.content.alt || ''} 
+            className={`max-w-full h-auto inline-block ${
+              block.content.rounded !== false ? 'rounded-lg' : ''
+            } ${sizeClasses[block.content.size] || 'w-1/2'} ${hoverClass}`}
+          />
+        );
+
         return (
-          <div key={block.id} className="mb-4">
-            <img 
-              src={block.content.url} 
-              alt={block.content.alt || ''} 
-              className={`max-w-full h-auto rounded-lg ${
-                block.content.size === 'small' ? 'w-1/4' :
-                block.content.size === 'large' ? 'w-full' : 'w-1/2'
-              }`}
-            />
+          <div key={block.id} className={`mb-4 ${alignmentClasses[block.content.alignment] || 'text-center'}`}>
+            {block.content.linkUrl ? (
+              <a href={block.content.linkUrl} target="_blank" rel="noopener noreferrer" className="inline-block">
+                {imageElement}
+              </a>
+            ) : (
+              imageElement
+            )}
             {block.content.caption && (
-              <p className="text-sm text-muted-foreground mt-2 italic text-center">
+              <p className="text-sm text-muted-foreground mt-2 italic">
                 {block.content.caption}
               </p>
             )}
@@ -135,17 +158,17 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
         };
 
         return (
-          <div key={block.id} className="mb-4">
-            <div className="aspect-video">
+          <div key={block.id} className={`mb-4 ${alignmentClasses[block.content.alignment] || 'text-center'}`}>
+            <div className={`aspect-video inline-block ${sizeClasses[block.content.size] || 'w-1/2'}`}>
               <iframe
                 src={convertToEmbedUrl(block.content.url)}
-                className="w-full h-full rounded-lg"
+                className={`w-full h-full ${block.content.rounded !== false ? 'rounded-lg' : ''}`}
                 style={{ border: `3px solid ${block.content.borderColor || '#000000'}` }}
                 allowFullScreen
               />
             </div>
             {block.content.caption && (
-              <p className="text-sm text-muted-foreground mt-2 italic text-center">
+              <p className="text-sm text-muted-foreground mt-2 italic">
                 {block.content.caption}
               </p>
             )}
