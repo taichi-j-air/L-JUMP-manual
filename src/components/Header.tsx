@@ -92,14 +92,22 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
             <span className="text-xs text-muted-foreground">設定/操作マニュアル</span>
           </Link>
           
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2"
-          >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button 
+              className="bg-[#fe4d01] hover:bg-[#d94401] text-primary-foreground font-medium px-3 py-1.5 rounded-md text-xs"
+              onClick={() => window.open('https://ljump.example.com', '_blank')}
+            >
+              L!JUMPを使ってみる
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2"
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </Button>
+          </div>
         </div>
 
         {/* Mobile Side Menu Overlay */}
@@ -126,7 +134,7 @@ export const Header = ({ selectedCategory = "すべて", onCategoryChange, searc
                 </div>
                 
                 {/* Categories */}
-                <div className="flex-1 p-4 space-y-2">
+                <div className="flex-1 p-4 space-y-2 overflow-y-auto">
                   <button
                     onClick={() => {
                       onCategoryChange?.('すべて');
