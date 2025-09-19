@@ -82,6 +82,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
       
       case 'image':
         const hoverClass = block.content.hoverEffect !== false ? 'hover:opacity-70 transition-opacity' : '';
+        const linkClass = block.content.linkUrl ? 'cursor-pointer' : '';
 
         const imageElement = (
           <img 
@@ -89,19 +90,18 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
             alt={block.content.alt || ''} 
             className={`max-w-full h-auto inline-block ${
               block.content.rounded !== false ? 'rounded-lg' : ''
-            } ${sizeClasses[block.content.size] || 'w-1/2'} ${hoverClass}`}
+            } ${sizeClasses[block.content.size] || 'w-1/2'} ${hoverClass} ${linkClass}`}
+            onClick={() => {
+              if (block.content.linkUrl) {
+                window.open(block.content.linkUrl, '_blank', 'noopener,noreferrer');
+              }
+            }}
           />
         );
 
         return (
           <div key={block.id} className={`mb-4 ${alignmentClasses[block.content.alignment] || 'text-center'}`}>
-            {block.content.linkUrl ? (
-              <a href={block.content.linkUrl} target="_blank" rel="noopener noreferrer" className="inline-block">
-                {imageElement}
-              </a>
-            ) : (
-              imageElement
-            )}
+            {imageElement}
             {block.content.caption && (
               <p className="text-sm text-muted-foreground mt-2 italic">
                 {block.content.caption}
