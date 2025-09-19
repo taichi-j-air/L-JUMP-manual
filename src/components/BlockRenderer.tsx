@@ -209,11 +209,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, articleId 
                       alt="icon"
                       className="w-12 h-12 md:w-[70px] md:h-[70px] rounded-full object-cover border-2 border-gray-200"
                     />
-                    {name && (
-                      <span className="text-[10px] text-muted-foreground mt-0 break-all whitespace-pre-wrap" style={{ lineHeight: 0.8 }}>
-                        {name}
-                      </span>
-                    )}
+                      {name && (
+                        <span className="text-[10px] text-muted-foreground mt-0 break-all whitespace-pre-wrap leading-none">
+                          {name}
+                        </span>
+                      )}
                   </div>
 
                   {/* 吹き出し */}
