@@ -59,7 +59,12 @@ export const useAnalytics = () => {
           article_id,
           articles!fk_article (
             title,
-            id
+            id,
+            category_id,
+            categories:categories!articles_category_id_fkey (
+              id,
+              name
+            )
           )
         `);
 

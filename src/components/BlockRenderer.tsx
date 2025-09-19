@@ -20,6 +20,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, articleId 
             target="_blank"
             rel="noopener noreferrer"
             className="text-ljump-green hover:text-ljump-green-dark underline"
+            onClick={() => trackLinkClick(part, block.id, articleId)}
           >
             {part}
           </a>
@@ -169,11 +170,6 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, articleId 
                 className={`w-full h-full ${block.content.rounded !== false ? 'rounded-lg' : ''}`}
                 style={{ border: `3px solid ${block.content.borderColor || '#000000'}` }}
                 allowFullScreen
-                onLoad={() => {
-                  if (block.content.url && articleId) {
-                    trackLinkClick(block.content.url, block.id, articleId);
-                  }
-                }}
               />
             </div>
             {block.content.caption && (

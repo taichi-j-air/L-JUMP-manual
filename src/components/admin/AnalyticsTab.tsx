@@ -1,14 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
+const UNCATEGORIZED_KEY = 'uncategorized';
+const UNCATEGORIZED_LABEL = 'カテゴリ未設定';
+
 interface AnalyticsData {
   pageViews: Array<{ path: string }>;
-  articleViews: Array<{ 
-    article_id: string; 
-    articles: { title: string; id: string } | null;
+  articleViews: Array<{
+    article_id: string | null;
+    articles: {
+      title: string;
+      id: string;
+      category_id: string | null;
+      categories?: { id: string; name: string } | null;
+    } | null;
   }>;
   linkClicks: Array<{ 
     link_url: string; 
@@ -25,6 +36,7 @@ export const AnalyticsTab: React.FC = () => {
     linkClicks: []
   });
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
     const loadAnalytics = async () => {
@@ -41,38 +53,159 @@ export const AnalyticsTab: React.FC = () => {
     loadAnalytics();
   }, [getAnalytics]);
 
+  // 管理者ページを除外したページビュー
+  const filteredPageViews = React.useMemo(() => {
+    return analytics.pageViews.filter(view => !view.path.startsWith('/admin'));
+  }, [analytics.pageViews]);
+
+  const articleTitleMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    analytics.articleViews.forEach(view => {
+      if (view.article_id && view.articles?.title) {
+        map[view.article_id] = view.articles.title;
+      }
+    });
+    return map;
+  }, [analytics.articleViews]);
+
+  const resolvePageDisplayName = React.useCallback((path: string) => {
+    const staticPageNames: Record<string, string> = {
+      '/': 'TOPページ',
+      '/privacy-policy': 'プライバシーポリシー',
+      '/terms-of-service': '利用規約'
+    };
+
+    if (staticPageNames[path]) {
+      return staticPageNames[path];
+    }
+
+    const articleMatch = path.match(/^\/article\/(.+)$/);
+    if (articleMatch) {
+      const rawArticleId = articleMatch[1];
+      let articleId = rawArticleId;
+      try {
+        articleId = decodeURIComponent(rawArticleId);
+      } catch (error) {
+        console.warn('記事IDのデコードに失敗しました:', error);
+      }
+
+      if (articleTitleMap[articleId]) {
+        return articleTitleMap[articleId];
+      }
+      return `記事: ${articleId}`;
+    }
+
+    if (!path || path === '/') {
+      return 'TOPページ';
+    }
+
+    return path;
+  }, [articleTitleMap]);
+
   // ページビューの集計
   const pageViewStats = React.useMemo(() => {
     const pathCounts: Record<string, number> = {};
-    analytics.pageViews.forEach(view => {
-      pathCounts[view.path] = (pathCounts[view.path] || 0) + 1;
+    filteredPageViews.forEach(view => {
+      const normalizedPath = view.path || '/';
+      pathCounts[normalizedPath] = (pathCounts[normalizedPath] || 0) + 1;
     });
     
     return Object.entries(pathCounts)
-      .map(([path, count]) => ({ path, count }))
+      .map(([path, count]) => ({
+        path,
+        count,
+        displayName: resolvePageDisplayName(path)
+      }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10); // 上位10件
-  }, [analytics.pageViews]);
+  }, [filteredPageViews, resolvePageDisplayName]);
 
   // 記事ビューの集計
   const articleViewStats = React.useMemo(() => {
-    const articleCounts: Record<string, { title: string; count: number }> = {};
-    
+    const articleCounts: Record<string, {
+      title: string;
+      count: number;
+      categoryId: string | null;
+      categoryName: string;
+    }> = {};
+
     analytics.articleViews.forEach(view => {
-      const title = view.articles?.title || '不明な記事';
-      const key = view.article_id;
-      
-      if (!articleCounts[key]) {
-        articleCounts[key] = { title, count: 0 };
+      if (!view.article_id) {
+        return;
       }
+
+      const title = view.articles?.title || '不明な記事';
+      const categoryId = view.articles?.category_id || null;
+      const categoryName = view.articles?.categories?.name || UNCATEGORIZED_LABEL;
+      const key = view.article_id;
+
+      if (!articleCounts[key]) {
+        articleCounts[key] = {
+          title,
+          count: 0,
+          categoryId,
+          categoryName,
+        };
+      }
+
       articleCounts[key].count++;
     });
-    
+
     return Object.entries(articleCounts)
-      .map(([id, data]) => ({ id, title: data.title, count: data.count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // 上位10件
+      .map(([id, data]) => ({
+        id,
+        title: data.title,
+        count: data.count,
+        categoryId: data.categoryId,
+        categoryName: data.categoryName,
+      }))
+      .sort((a, b) => b.count - a.count);
   }, [analytics.articleViews]);
+
+  const categoryOptions = React.useMemo(() => {
+    const map = new Map<string, string>();
+    articleViewStats.forEach(article => {
+      const key = article.categoryId ?? UNCATEGORIZED_KEY;
+      const label = article.categoryName || UNCATEGORIZED_LABEL;
+      map.set(key, label);
+    });
+
+    return Array.from(map.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ja'));
+  }, [articleViewStats]);
+
+  const filteredArticleViewStats = React.useMemo(() => {
+    if (selectedCategory === 'all') {
+      return articleViewStats;
+    }
+
+    return articleViewStats.filter(article => {
+      const key = article.categoryId ?? UNCATEGORIZED_KEY;
+      return key === selectedCategory;
+    });
+  }, [articleViewStats, selectedCategory]);
+
+  const [articleCurrentPage, setArticleCurrentPage] = useState(1);
+  const articlesPerPage = 20;
+  const totalArticlePages = Math.max(1, Math.ceil(filteredArticleViewStats.length / articlesPerPage));
+
+  useEffect(() => {
+    setArticleCurrentPage(1);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    const maxPage = Math.max(1, totalArticlePages);
+    if (articleCurrentPage > maxPage) {
+      setArticleCurrentPage(maxPage);
+    }
+  }, [articleCurrentPage, totalArticlePages]);
+
+  const paginatedArticleViewStats = React.useMemo(() => {
+    const startIndex = (articleCurrentPage - 1) * articlesPerPage;
+    const endIndex = startIndex + articlesPerPage;
+    return filteredArticleViewStats.slice(startIndex, endIndex);
+  }, [filteredArticleViewStats, articleCurrentPage, articlesPerPage]);
 
   // リンククリック集計
   const linkClickStats = React.useMemo(() => {
@@ -106,7 +239,7 @@ export const AnalyticsTab: React.FC = () => {
             <CardTitle className="text-sm font-medium">総ページビュー</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{analytics.pageViews.length}</div>
+            <div className="text-2xl font-bold">{filteredPageViews.length}</div>
           </CardContent>
         </Card>
         
@@ -139,10 +272,19 @@ export const AnalyticsTab: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={pageViewStats}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="path" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#8884d8" />
+                <XAxis
+                  dataKey="displayName"
+                  tickFormatter={(value: string) => value.length > 15 ? value.substring(0, 12) + '...' : value} // 長いパスを短縮
+                  tick={{ fontSize: 11 }} // ラベルを小さく表示
+                  height={50} // X軸の表示領域を確保
+                  label={{ value: 'ページ名', position: 'insideBottom', offset: 0 }} // X軸ラベルを追加
+                />
+                <YAxis label={{ value: 'ビュー数', angle: -90, position: 'insideLeft' }} /> {/* Y軸ラベルを追加 */}
+                <Tooltip
+                  formatter={(value: number) => [`${value} 回`, 'ビュー数']} // ツールチップの値を「〇〇 回」と表示
+                  labelFormatter={(label: string) => label} // ツールチップのラベルはタイトルのみ表示
+                />
+                <Bar dataKey="count" fill="#8884d8" name="ページビュー数" /> {/* 凡例用にnameを追加 */}
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -155,17 +297,67 @@ export const AnalyticsTab: React.FC = () => {
           <CardTitle>人気記事ランキング</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {articleViewStats.map((article, index) => (
-              <div key={article.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary">{index + 1}</Badge>
-                  <span className="font-medium truncate">{article.title}</span>
-                </div>
-                <Badge variant="outline">{article.count} 回</Badge>
-              </div>
-            ))}
+          <div className="flex flex-col gap-2 mb-4 md:flex-row md:items-center md:justify-between">
+            <span className="text-sm text-muted-foreground">カテゴリで表示を切り替え</span>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full md:w-[220px]">
+                <SelectValue placeholder="カテゴリを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">すべて</SelectItem>
+                {categoryOptions.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          <div className="rounded-md border">
+            <Table className="border-collapse [&_th:not(:last-child)]:border-r [&_td:not(:last-child)]:border-r [&_th]:border-border [&_td]:border-border">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60px] border-r">順位</TableHead>
+                  <TableHead className="border-r">記事タイトル</TableHead>
+                  <TableHead className="border-r">カテゴリ</TableHead>
+                  <TableHead className="text-right w-[100px]">ビュー数</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedArticleViewStats.map((article, index) => (
+                  <TableRow key={article.id}>
+                    <TableCell className="font-medium border-r">{(articleCurrentPage - 1) * articlesPerPage + index + 1}</TableCell>
+                    <TableCell className="border-r">{article.title}</TableCell>
+                    <TableCell className="border-r">{article.categoryName}</TableCell>
+                    <TableCell className="text-right">{article.count} 回</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {totalArticlePages > 1 && (
+            <div className="flex justify-center items-center space-x-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setArticleCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={articleCurrentPage === 1}
+              >
+                前へ
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                ページ {articleCurrentPage} / {totalArticlePages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setArticleCurrentPage(prev => Math.min(totalArticlePages, prev + 1))}
+                disabled={articleCurrentPage === totalArticlePages}
+              >
+                次へ
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -181,8 +373,8 @@ export const AnalyticsTab: React.FC = () => {
                 <div className="flex items-center gap-3">
                   <Badge variant="secondary">{index + 1}</Badge>
                   <span className="text-sm truncate max-w-md" title={link.url}>
-                    {link.url}
-                  </span>
+              {new URL(link.url).hostname} {/* ドメイン名を表示 */}
+            </span>
                 </div>
                 <Badge variant="outline">{link.count} 回</Badge>
               </div>
