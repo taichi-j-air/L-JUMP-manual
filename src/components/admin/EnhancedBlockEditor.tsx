@@ -201,7 +201,7 @@ export const EnhancedBlockEditor: React.FC<EnhancedBlockEditorProps> = ({ blocks
   };
 
   const renderCollapsedPreview = (block: Block) => {
-    let previewText = block.type;
+    let previewText: string = block.type;
     switch (block.type) {
       case 'heading':
         previewText = `見出し: ${block.content.text?.substring(0, 30)}...`;
