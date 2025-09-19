@@ -9,6 +9,25 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const UNCATEGORIZED_KEY = 'uncategorized';
 const UNCATEGORIZED_LABEL = 'カテゴリ未設定';
+const STATIC_PAGE_KEY = 'static';
+const STATIC_PAGE_LABEL = 'その他ページ';
+const CATEGORY_COLOR_PALETTE = ['#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F472B6', '#0EA5E9', '#84CC16', '#F97316', '#14B8A6'];
+const STATIC_PAGE_COLOR = '#94A3B8';
+const DEFAULT_CATEGORY_COLOR = '#6B7280';
+
+const getArticleIdFromPath = (path: string): string | null => {
+  const match = path.match(/^\/article\/(.+)$/);
+  if (!match) {
+    return null;
+  }
+
+  const rawArticleId = match[1];
+  try {
+    return decodeURIComponent(rawArticleId);
+  } catch {
+    return rawArticleId;
+  }
+};
 
 interface AnalyticsData {
   pageViews: Array<{ path: string }>;
@@ -26,6 +45,29 @@ interface AnalyticsData {
     article_id: string | null; 
     created_at: string;
   }>;
+}
+
+interface ArticleMeta {
+  title: string;
+  categoryId: string | null;
+  categoryName: string;
+}
+
+interface PageViewStat {
+  path: string;
+  displayName: string;
+  count: number;
+  categoryKey: string;
+  categoryName: string;
+}
+
+interface ArticleViewStat {
+  id: string;
+  title: string;
+  count: number;
+  categoryId: string | null;
+  categoryName: string;
+  categoryKey: string;
 }
 
 export const AnalyticsTab: React.FC = () => {
@@ -58,13 +100,25 @@ export const AnalyticsTab: React.FC = () => {
     return analytics.pageViews.filter(view => !view.path.startsWith('/admin'));
   }, [analytics.pageViews]);
 
-  const articleTitleMap = React.useMemo(() => {
-    const map: Record<string, string> = {};
+  const articleMetaMap = React.useMemo<Record<string, ArticleMeta>>(() => {
+    const map: Record<string, ArticleMeta> = {};
+
     analytics.articleViews.forEach(view => {
-      if (view.article_id && view.articles?.title) {
-        map[view.article_id] = view.articles.title;
+      if (!view.article_id) {
+        return;
       }
+
+      const title = view.articles?.title ?? '不明な記事';
+      const categoryId = view.articles?.category_id ?? null;
+      const categoryName = view.articles?.categories?.name ?? UNCATEGORIZED_LABEL;
+
+      map[view.article_id] = {
+        title,
+        categoryId,
+        categoryName,
+      };
     });
+
     return map;
   }, [analytics.articleViews]);
 
@@ -79,18 +133,11 @@ export const AnalyticsTab: React.FC = () => {
       return staticPageNames[path];
     }
 
-    const articleMatch = path.match(/^\/article\/(.+)$/);
-    if (articleMatch) {
-      const rawArticleId = articleMatch[1];
-      let articleId = rawArticleId;
-      try {
-        articleId = decodeURIComponent(rawArticleId);
-      } catch (error) {
-        console.warn('記事IDのデコードに失敗しました:', error);
-      }
-
-      if (articleTitleMap[articleId]) {
-        return articleTitleMap[articleId];
+    const articleId = getArticleIdFromPath(path);
+    if (articleId) {
+      const meta = articleMetaMap[articleId];
+      if (meta?.title) {
+        return meta.title;
       }
       return `記事: ${articleId}`;
     }
@@ -100,74 +147,79 @@ export const AnalyticsTab: React.FC = () => {
     }
 
     return path;
-  }, [articleTitleMap]);
+  }, [articleMetaMap]);
 
   // ページビューの集計
-  const pageViewStats = React.useMemo(() => {
-    const pathCounts: Record<string, number> = {};
+  const pageViewStats = React.useMemo<PageViewStat[]>(() => {
+    const statsMap: Record<string, PageViewStat> = {};
+
     filteredPageViews.forEach(view => {
       const normalizedPath = view.path || '/';
-      pathCounts[normalizedPath] = (pathCounts[normalizedPath] || 0) + 1;
+      const articleId = getArticleIdFromPath(normalizedPath);
+
+      let categoryKey = STATIC_PAGE_KEY;
+      let categoryName = STATIC_PAGE_LABEL;
+      let displayName = resolvePageDisplayName(normalizedPath);
+
+      if (articleId) {
+        const meta = articleMetaMap[articleId];
+        categoryKey = meta?.categoryId ?? UNCATEGORIZED_KEY;
+        categoryName = meta?.categoryName ?? UNCATEGORIZED_LABEL;
+        displayName = meta?.title ?? displayName;
+      }
+
+      if (!statsMap[normalizedPath]) {
+        statsMap[normalizedPath] = {
+          path: normalizedPath,
+          displayName,
+          count: 0,
+          categoryKey,
+          categoryName,
+        };
+      }
+
+      statsMap[normalizedPath].count += 1;
     });
-    
-    return Object.entries(pathCounts)
-      .map(([path, count]) => ({
-        path,
-        count,
-        displayName: resolvePageDisplayName(path)
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // 上位10件
-  }, [filteredPageViews, resolvePageDisplayName]);
+
+    return Object.values(statsMap).sort((a, b) => b.count - a.count);
+  }, [filteredPageViews, resolvePageDisplayName, articleMetaMap]);
 
   // 記事ビューの集計
-  const articleViewStats = React.useMemo(() => {
-    const articleCounts: Record<string, {
-      title: string;
-      count: number;
-      categoryId: string | null;
-      categoryName: string;
-    }> = {};
+  const articleViewStats = React.useMemo<ArticleViewStat[]>(() => {
+    const articleCounts: Record<string, ArticleViewStat> = {};
 
     analytics.articleViews.forEach(view => {
       if (!view.article_id) {
         return;
       }
 
-      const title = view.articles?.title || '不明な記事';
-      const categoryId = view.articles?.category_id || null;
-      const categoryName = view.articles?.categories?.name || UNCATEGORIZED_LABEL;
-      const key = view.article_id;
+      const meta = articleMetaMap[view.article_id];
+      const title = meta?.title ?? '不明な記事';
+      const categoryId = meta?.categoryId ?? null;
+      const categoryName = meta?.categoryName ?? UNCATEGORIZED_LABEL;
+      const categoryKey = categoryId ?? UNCATEGORIZED_KEY;
 
-      if (!articleCounts[key]) {
-        articleCounts[key] = {
+      if (!articleCounts[view.article_id]) {
+        articleCounts[view.article_id] = {
+          id: view.article_id,
           title,
           count: 0,
           categoryId,
           categoryName,
+          categoryKey,
         };
       }
 
-      articleCounts[key].count++;
+      articleCounts[view.article_id].count += 1;
     });
 
-    return Object.entries(articleCounts)
-      .map(([id, data]) => ({
-        id,
-        title: data.title,
-        count: data.count,
-        categoryId: data.categoryId,
-        categoryName: data.categoryName,
-      }))
-      .sort((a, b) => b.count - a.count);
-  }, [analytics.articleViews]);
+    return Object.values(articleCounts).sort((a, b) => b.count - a.count);
+  }, [analytics.articleViews, articleMetaMap]);
 
   const categoryOptions = React.useMemo(() => {
     const map = new Map<string, string>();
     articleViewStats.forEach(article => {
-      const key = article.categoryId ?? UNCATEGORIZED_KEY;
-      const label = article.categoryName || UNCATEGORIZED_LABEL;
-      map.set(key, label);
+      map.set(article.categoryKey, article.categoryName ?? UNCATEGORIZED_LABEL);
     });
 
     return Array.from(map.entries())
@@ -175,15 +227,50 @@ export const AnalyticsTab: React.FC = () => {
       .sort((a, b) => a.label.localeCompare(b.label, 'ja'));
   }, [articleViewStats]);
 
+  useEffect(() => {
+    if (selectedCategory === 'all') {
+      return;
+    }
+
+    const exists = categoryOptions.some(option => option.value === selectedCategory);
+    if (!exists) {
+      setSelectedCategory('all');
+    }
+  }, [categoryOptions, selectedCategory]);
+
+  const categoryColorMap = React.useMemo(() => {
+    const map: Record<string, string> = {
+      [STATIC_PAGE_KEY]: STATIC_PAGE_COLOR,
+    };
+
+    categoryOptions.forEach((option, index) => {
+      if (!map[option.value]) {
+        map[option.value] = CATEGORY_COLOR_PALETTE[index % CATEGORY_COLOR_PALETTE.length];
+      }
+    });
+
+    if (!map[UNCATEGORIZED_KEY]) {
+      map[UNCATEGORIZED_KEY] = CATEGORY_COLOR_PALETTE[categoryOptions.length % CATEGORY_COLOR_PALETTE.length];
+    }
+
+    return map;
+  }, [categoryOptions]);
+
+  const getCategoryColor = React.useCallback((categoryKey?: string | null) => {
+    if (categoryKey === STATIC_PAGE_KEY) {
+      return STATIC_PAGE_COLOR;
+    }
+
+    const key = categoryKey ?? UNCATEGORIZED_KEY;
+    return categoryColorMap[key] ?? DEFAULT_CATEGORY_COLOR;
+  }, [categoryColorMap]);
+
   const filteredArticleViewStats = React.useMemo(() => {
     if (selectedCategory === 'all') {
       return articleViewStats;
     }
 
-    return articleViewStats.filter(article => {
-      const key = article.categoryId ?? UNCATEGORIZED_KEY;
-      return key === selectedCategory;
-    });
+    return articleViewStats.filter(article => article.categoryKey === selectedCategory);
   }, [articleViewStats, selectedCategory]);
 
   const [articleCurrentPage, setArticleCurrentPage] = useState(1);
@@ -206,6 +293,19 @@ export const AnalyticsTab: React.FC = () => {
     const endIndex = startIndex + articlesPerPage;
     return filteredArticleViewStats.slice(startIndex, endIndex);
   }, [filteredArticleViewStats, articleCurrentPage, articlesPerPage]);
+
+  const pageViewChartData = React.useMemo(() => {
+    const stats = selectedCategory === 'all'
+      ? pageViewStats
+      : pageViewStats.filter(stat => stat.categoryKey === selectedCategory);
+
+    return stats
+      .slice(0, 10)
+      .map(stat => ({
+        ...stat,
+        color: getCategoryColor(stat.categoryKey),
+      }));
+  }, [pageViewStats, selectedCategory, getCategoryColor]);
 
   // リンククリック集計
   const linkClickStats = React.useMemo(() => {
@@ -270,7 +370,7 @@ export const AnalyticsTab: React.FC = () => {
         <CardContent>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pageViewStats}>
+              <BarChart data={pageViewChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="displayName"
@@ -284,7 +384,11 @@ export const AnalyticsTab: React.FC = () => {
                   formatter={(value: number) => [`${value} 回`, 'ビュー数']} // ツールチップの値を「〇〇 回」と表示
                   labelFormatter={(label: string) => label} // ツールチップのラベルはタイトルのみ表示
                 />
-                <Bar dataKey="count" fill="#8884d8" name="ページビュー数" /> {/* 凡例用にnameを追加 */}
+                <Bar dataKey="count" name="ページビュー数"> {/* カテゴリごとに色を付与 */}
+                  {pageViewChartData.map(stat => (
+                    <Cell key={stat.path} fill={stat.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -328,7 +432,16 @@ export const AnalyticsTab: React.FC = () => {
                   <TableRow key={article.id}>
                     <TableCell className="font-medium border-r">{(articleCurrentPage - 1) * articlesPerPage + index + 1}</TableCell>
                     <TableCell className="border-r">{article.title}</TableCell>
-                    <TableCell className="border-r">{article.categoryName}</TableCell>
+                    <TableCell className="border-r">
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: getCategoryColor(article.categoryKey) }}
+                          aria-hidden="true"
+                        />
+                        {article.categoryName ?? UNCATEGORIZED_LABEL}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">{article.count} 回</TableCell>
                   </TableRow>
                 ))}
