@@ -1,11 +1,14 @@
 import React from 'react';
 import { Block } from '@/components/admin/EnhancedBlockEditor';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface BlockRendererProps {
   blocks: Block[];
+  articleId?: string;
 }
 
-export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
+export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks, articleId }) => {
+  const { trackLinkClick } = useAnalytics();
   const convertURLsToLinks = (text: string) => {
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     return text.split(urlRegex).map((part, index) => {
@@ -93,6 +96,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
             } ${sizeClasses[block.content.size] || 'w-1/2'} ${hoverClass} ${linkClass}`}
             onClick={() => {
               if (block.content.linkUrl) {
+                trackLinkClick(block.content.linkUrl, block.id, articleId);
                 window.open(block.content.linkUrl, '_blank', 'noopener,noreferrer');
               }
             }}
@@ -165,6 +169,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
                 className={`w-full h-full ${block.content.rounded !== false ? 'rounded-lg' : ''}`}
                 style={{ border: `3px solid ${block.content.borderColor || '#000000'}` }}
                 allowFullScreen
+                onLoad={() => {
+                  if (block.content.url && articleId) {
+                    trackLinkClick(block.content.url, block.id, articleId);
+                  }
+                }}
               />
             </div>
             {block.content.caption && (

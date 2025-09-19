@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EnhancedBlockEditor, Block } from "@/components/admin/EnhancedBlockEditor";
 import { EditArticleModal, EditNewsModal, EditCategoryModal } from "@/components/admin/EditModals";
+import { AnalyticsTab } from "@/components/admin/AnalyticsTab";
 import { Footer } from "@/components/Footer";
 import { Article, Category, News } from "@/hooks/useArticles";
 
@@ -41,7 +42,7 @@ const Admin = () => {
   // Current tab state synced with URL hash
   const [currentTab, setCurrentTab] = useState(() => {
     const hash = window.location.hash.replace('#', '');
-    return ['articles', 'news', 'categories', 'privacy', 'terms'].includes(hash) ? hash : 'articles';
+    return ['articles', 'news', 'categories', 'analytics', 'privacy', 'terms'].includes(hash) ? hash : 'articles';
   });
 
   // Form states for new article
@@ -95,7 +96,7 @@ const Admin = () => {
     // Listen for hash changes
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '');
-      if (['articles', 'news', 'categories', 'privacy', 'terms'].includes(hash)) {
+      if (['articles', 'news', 'categories', 'analytics', 'privacy', 'terms'].includes(hash)) {
         setCurrentTab(hash);
       }
     };
@@ -716,7 +717,7 @@ const Admin = () => {
           </div>
 
           <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger 
                 value="articles"
                 onClick={() => window.location.hash = 'articles'}
@@ -734,6 +735,12 @@ const Admin = () => {
                 onClick={() => window.location.hash = 'categories'}
               >
                 カテゴリ管理
+              </TabsTrigger>
+              <TabsTrigger 
+                value="analytics"
+                onClick={() => window.location.hash = 'analytics'}
+              >
+                アナリティクス
               </TabsTrigger>
               <TabsTrigger 
                 value="privacy"
@@ -1117,6 +1124,10 @@ const Admin = () => {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="analytics" className="space-y-6">
+              <AnalyticsTab />
             </TabsContent>
 
             <TabsContent value="privacy" className="space-y-6">

@@ -9,6 +9,7 @@ import { ArrowLeft, Calendar, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Article as ArticleType, Category } from '@/hooks/useArticles';
 import { Block } from '@/components/admin/EnhancedBlockEditor';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Article = () => {
   const { id } = useParams();
@@ -16,14 +17,17 @@ const Article = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
+  const { trackArticleView } = useAnalytics();
 
   useEffect(() => {
     if (id) {
       fetchArticle(id);
       // Scroll to top when article changes
       window.scrollTo(0, 0);
+      // Track article view
+      trackArticleView(id);
     }
-  }, [id]);
+  }, [id, trackArticleView]);
 
   const fetchArticle = async (articleId: string) => {
     try {
@@ -187,7 +191,7 @@ const Article = () => {
             </div>
             
             {/* Article Content */}
-            <BlockRenderer blocks={blocks} />
+            <BlockRenderer blocks={blocks} articleId={article.id} />
           </div>
         </div>
       </div>

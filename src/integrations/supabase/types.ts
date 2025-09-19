@@ -14,6 +14,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      article_views: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_article"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           author: string
@@ -94,6 +120,38 @@ export type Database = {
         }
         Relationships: []
       }
+      link_clicks: {
+        Row: {
+          article_id: string | null
+          block_id: string | null
+          created_at: string
+          id: string
+          link_url: string
+        }
+        Insert: {
+          article_id?: string | null
+          block_id?: string | null
+          created_at?: string
+          id?: string
+          link_url: string
+        }
+        Update: {
+          article_id?: string | null
+          block_id?: string | null
+          created_at?: string
+          id?: string
+          link_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_article_link"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       news: {
         Row: {
           article_id: string | null
@@ -131,6 +189,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      page_views: {
+        Row: {
+          created_at: string
+          id: string
+          path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string
+        }
+        Relationships: []
       }
       site_settings: {
         Row: {
